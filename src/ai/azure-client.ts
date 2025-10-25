@@ -7,6 +7,11 @@ const client = new AzureOpenAI({
   apiVersion: process.env.AZURE_API_VERSION,
 });
 
+export function getAzureClient(): AzureOpenAI | null {
+  if (!process.env.AZURE_OPENAI_API_KEY) return null;
+  return client;
+}
+
 async function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }

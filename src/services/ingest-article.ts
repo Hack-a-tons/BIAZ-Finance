@@ -161,6 +161,17 @@ export async function ingestArticle(url: string, manualSymbol?: string, rssItem?
       }
     }
     
+    // Try AI image generation if still no image
+    if (!imageUrl && symbols.length > 0) {
+      console.log(`[${new Date().toISOString()}] Generating AI image for ${symbols[0]}`);
+      const { generateImage } = await import('../ai/generate-image');
+      const generatedUrl = await generateImage(fetched.title, symbols[0]);
+      if (generatedUrl) {
+        imageUrl = generatedUrl;
+        console.log(`[${new Date().toISOString()}] AI image generated successfully`);
+      }
+    }
+    
     // Reject articles without valid unique images
     if (!imageUrl) {
       console.warn(`[${new Date().toISOString()}] Skipping article (no unique image): ${url}`);
