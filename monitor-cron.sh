@@ -1,10 +1,19 @@
 #!/usr/bin/env bash
 
 # Cron job to monitor news feeds every 30 minutes
-# Add to crontab: */30 * * * * /path/to/monitor-cron.sh
+# Add to crontab with absolute path:
+# */30 * * * * /root/BIAZ-Finance/monitor-cron.sh >> /root/BIAZ-Finance/monitor.log 2>&1
 
-cd "$(dirname "$0")"
-source .env
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR"
+
+# Load environment variables
+if [ -f .env ]; then
+  source .env
+else
+  echo "[$(date)] ERROR: .env file not found in $SCRIPT_DIR"
+  exit 1
+fi
 
 echo "[$(date)] Starting feed monitoring..."
 

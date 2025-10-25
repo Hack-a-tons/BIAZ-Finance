@@ -76,11 +76,21 @@ curl -X POST https://api.news.biaz.hurated.com/v1/admin/monitor-feeds
 
 ### 2. Automated (Cron Job):
 ```bash
-# Add to crontab on server:
-*/30 * * * * /path/to/BIAZ-Finance/monitor-cron.sh
+# Find absolute path first:
+pwd  # e.g., /root/BIAZ-Finance
 
-# Or manually:
-./monitor-cron.sh
+# Add to crontab on server:
+crontab -e
+
+# Add one of these lines (use absolute path, NOT $HOME):
+# Every 30 minutes:
+*/30 * * * * /root/BIAZ-Finance/monitor-cron.sh >> /root/BIAZ-Finance/monitor.log 2>&1
+
+# Every hour:
+0 * * * * /root/BIAZ-Finance/monitor-cron.sh >> /root/BIAZ-Finance/monitor.log 2>&1
+
+# Check logs:
+tail -f /root/BIAZ-Finance/monitor.log
 ```
 
 ### 3. Monitor Activity:
