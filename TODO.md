@@ -188,10 +188,16 @@ curl https://api.news.biaz.hurated.com/v1/articles/art_1761408223432
   - Alert if approaching budget limits
   - Generate usage reports
 
-### 6.2 Caching
-- [ ] Redis for stock prices (15 min TTL)
+### 6.2 Caching ✅
+- [x] Redis for stock prices (15 min TTL)
 - [ ] Cache AI responses for identical articles
 - [ ] Cache article lists (1 min TTL)
+
+**Redis Features:**
+- Stock prices cached for 15 minutes
+- 256MB memory limit with LRU eviction
+- Persistent storage with volume
+- Automatic connection handling
 
 ### 6.3 Rate Limiting
 - [ ] Limit `/articles/ingest` to 10/hour per IP
