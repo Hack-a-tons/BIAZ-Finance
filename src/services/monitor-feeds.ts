@@ -97,7 +97,6 @@ export async function monitorRSSFeeds(): Promise<void> {
           }
         } catch (error) {
           failed++;
-          else failed++;
         }
 
         // Rate limit: max 5 new articles per feed
@@ -171,7 +170,6 @@ export async function monitorGoogleNews(): Promise<void> {
           }
         } catch (error) {
           failed++;
-          else failed++;
         }
 
         // Rate limit: max 3 new articles per query
