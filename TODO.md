@@ -195,11 +195,20 @@ curl https://api.news.biaz.hurated.com/v1/articles/art_1761408223432
 - [ ] Limit AI endpoints to prevent abuse
 - [ ] Track API usage per client
 
-### 6.4 Monitoring
-- [ ] Health check endpoint `/health`
+### 6.4 Monitoring ✅
+- [x] Health check endpoint `/health`
+- [x] Automated health monitoring (every 5 minutes)
 - [ ] Metrics endpoint `/metrics` (Prometheus format)
 - [ ] Alert on high error rates
 - [ ] Track response times
+
+**Health Check Features:**
+- Database connection test
+- AI provider status
+- Uptime tracking
+- Returns 200 (healthy) or 503 (unhealthy)
+- Monitored every 5 minutes via cron
+- Logs to `logs/health.log`
 
 ---
 
