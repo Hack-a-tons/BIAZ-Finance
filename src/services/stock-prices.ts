@@ -20,19 +20,22 @@ export async function getStockPrice(symbol: string): Promise<StockQuote | null> 
       return cached.data;
     }
 
-    // Dynamic import for ESM module
-    const yahooFinance = await import('yahoo-finance2');
+    // Fetch from Yahoo Finance API (free, no key needed)
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`;
+    const response = await fetch(url);
+    const data: any = await response.json();
     
-    // Fetch from Yahoo Finance
-    const quote = await yahooFinance.default.quote(symbol);
-    
-    if (!quote || !quote.regularMarketPrice) {
+    if (!data.chart?.result?.[0]) {
       console.error(`No price data for ${symbol}`);
       return null;
     }
 
-    const price = quote.regularMarketPrice;
-    const changePercent = quote.regularMarketChangePercent || 0;
+    const result = data.chart.result[0];
+    const meta = result.meta;
+    const price = meta.regularMarketPrice;
+    const previousClose = meta.chartPreviousClose || meta.previousClose;
+    const change = price - previousClose;
+    const changePercent = (change / previousClose) * 100;
     const changeStr = changePercent >= 0 
       ? `+${changePercent.toFixed(2)}%` 
       : `${changePercent.toFixed(2)}%`;
@@ -41,8 +44,8 @@ export async function getStockPrice(symbol: string): Promise<StockQuote | null> 
       symbol,
       price,
       change: changeStr,
-      name: quote.longName || quote.shortName || symbol,
-      exchange: quote.exchange || 'NASDAQ',
+      name: meta.longName || meta.shortName || symbol,
+      exchange: meta.exchangeName || 'NASDAQ',
     };
 
     // Cache it
