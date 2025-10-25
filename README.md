@@ -1,9 +1,11 @@
 # BIAZ Finance — TruthScore API
 
 Dockerized Node.js backend powering real-time **truth-scored, impact-explained financial news**  
-for the BIAZ Finance mobile client (screenshot attached in repo).
+for the BIAZ Finance mobile client (screenshot below).
 
-Built at **De-Vibed Hackathon @ AngelList SF** — where AI is allowed, but sloppy / vibes-driven code is not.
+![BIAZ Finance mobile client](https://github.com/Hack-a-tons/BIAZ-Finance/blob/main/images/screenshot.jpg?raw=true)
+
+Built at [**De-Vibed Hackathon @ AngelList SF**](https://luma.com/dj3k3tri) — where AI is allowed, but sloppy / vibes-driven code is not.
 
 ---
 
