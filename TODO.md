@@ -12,7 +12,7 @@ Client integration started against mock endpoints.
 ### 1.1 Database Schema ✅
 - [x] Create `schema.sql` with tables:
   - `sources` (id, name, domain, credibility_score, category, verified_publisher)
-  - `articles` (id, title, summary, url, image_url, published_at, source_id, truth_score, impact_sentiment, explanation, created_at, updated_at)
+  - `articles` (id, title, summary, url, image_url, published_at, source_id, truth_score, impact_sentiment, explanation, forecast_summary, created_at, updated_at)
   - `article_symbols` (article_id, symbol) - many-to-many
   - `claims` (id, article_id, text, verified, confidence, created_at)
   - `claim_evidence` (claim_id, url) - one-to-many
@@ -20,6 +20,7 @@ Client integration started against mock endpoints.
   - `forecasts` (id, article_id, symbol, sentiment, impact_score, price_target, time_horizon, confidence, reasoning, generated_at)
 - [x] Add migration script to run schema on startup
 - [x] Seed initial sources (Financial Times, Reuters, TechCrunch, etc.)
+- [x] Added `forecast_summary` column via migration (2025-10-24)
 
 ### 1.2 Database Client ✅
 - [x] Install `pg` (PostgreSQL client for Node.js)
@@ -318,9 +319,9 @@ Rate limits are per-IP, so different IPs can test independently during demos.
 
 ### 6.5.1 Image Validation ✅
 All article images are validated before being stored in the database:
-- [x] HTTP HEAD request with 5-second timeout
+- [x] HTTP HEAD request with 10-second timeout (increased from 5s)
 - [x] Checks for HTTP 200 status
-- [x] Verifies `Content-Type` header starts with `image/`
+- [x] Relaxed content-type check: accepts `image/*`, `octet-stream`, or missing header
 - [x] **Articles without valid images are rejected** during ingestion
 
 ### 6.5.2 Parallel Article Fetching ✅
@@ -330,6 +331,18 @@ The system tries all 3 article fetching methods in parallel:
 - [x] **Apify** - Most robust (but has memory limits)
 - [x] First successful method wins
 - [x] Maximizes chances of getting real article images
+
+**Duplicate Prevention:**
+- [x] Rejects articles with duplicate image URLs (prevents placeholder spam)
+- [x] Rejects articles with duplicate titles
+- [x] Ensures title ≠ summary (prevents low-quality content)
+- [x] Tracks rejection reasons: no-stocks, no-image, ads, duplicates, failed
+
+**Phase 1 Feed Expansion:**
+- [x] Increased RSS feeds from 3 to 8 sources
+- [x] Increased Google News queries from 4 to 10
+- [x] Result: 225% increase in articles found (40 → 130 per run)
+- [x] Added 2-second delay between ingestions to prevent rate limit bursts
 
 ### 6.5.3 Fallback Image Service ✅
 
@@ -343,7 +356,21 @@ The system tries all 3 article fetching methods in parallel:
 - Status: ❌ Not working (HTTP 503)
 - Reason: Free tier discontinued
 
-### 6.5.4 Alternative Image Services
+### 6.5.4 AI Rate Limit Handling ✅
+
+**Exponential Backoff:**
+- [x] Detects 429 (rate limit) errors from AI providers
+- [x] Retries with delays: 1s, 2s, 4s
+- [x] Implemented in both Azure OpenAI and Gemini clients
+- [x] 2-second delay between successful article ingestions
+- [x] Prevents rate limit bursts during batch operations
+
+**Cost Optimization:**
+- [x] Prevents wasted API calls during rate limit periods
+- [x] Graceful degradation when limits hit
+- [x] Logs rate limit events for monitoring
+
+### 6.5.5 Alternative Image Services
 
 **1. Pixabay API (Recommended)**
 ```typescript
@@ -396,6 +423,54 @@ async function generateStockImage(symbol: string): Promise<string> {
 2. Add to `.env`: `PIXABAY_API_KEY=your_key_here` or `PEXELS_API_KEY=your_key_here`
 3. Update `generateStockImage()` in `src/services/ingest-article.ts`
 
+### 6.5.6 AI Image Generation (Future Enhancement)
+
+**Available Options:**
+
+**Azure OpenAI DALL-E:**
+- DALL-E 3: $0.04 per image (1024×1024)
+- DALL-E 2: $0.02 per image (1024×1024)
+- Already configured in project
+- High quality, finance-specific prompts possible
+
+**Google Gemini Imagen:**
+- Imagen 3.0: Available
+- Imagen 4.0 Preview: Available (imagen-4.0-generate-preview-06-06)
+- Already configured in project
+- Competitive pricing
+
+**Hybrid Approach (Recommended):**
+1. Try to fetch real image from article (current method)
+2. If no valid image found, generate with AI
+3. Estimated cost: $0.016/article average (assuming 40% need generation)
+
+**Implementation Status:**
+- [ ] Add image generation fallback to ingest pipeline
+- [ ] Create prompt templates for finance-themed images
+- [ ] Add cost tracking for generated images
+- [ ] Consider caching generated images by symbol
+
+---
+
+## Phase 6.7: Database Cleanup & Maintenance ✅
+
+### 6.7.1 Cleanup Script ✅
+- [x] Created `scripts/cleanup-invalid-articles.sh`
+- [x] Enforces all current quality criteria:
+  - Must have valid image (not placeholder)
+  - Must have unique image URL
+  - Must have unique title
+  - Title must differ from summary
+  - Must have stock symbols
+  - Must not be advertisement
+- [x] Shows statistics before/after cleanup
+- [x] Safe to run anytime
+
+**Historical Cleanup:**
+- Deleted all 64 existing articles (all had placeholder images)
+- Only 1 article re-ingested after cleanup
+- Demonstrates strict quality enforcement
+
 ---
 
 ## Phase 6.6: Logging & Monitoring ✅
@@ -408,6 +483,8 @@ Expected filtering conditions logged as warnings (not errors):
 - No stock symbols found
 - No valid image (404, wrong content-type, timeout)
 - Advertisement detected (subscription/paywall keywords)
+- Duplicate image or title detected
+- Stack traces removed for cleaner logs
 
 ### 6.6.3 Docker Logging ✅
 JSON file driver with rotation:
@@ -424,9 +501,66 @@ Single-line format with uppercase tags:
 - `[CLEANUP]` - Weekly Sunday 3 AM
 
 ### 6.6.5 Rate Limiting ✅
-- Trust proxy configured for nginx
+- Trust proxy configured for nginx (fixes ERR_ERL_UNEXPECTED_X_FORWARDED_FOR)
 - General: 100 req/min per IP
 - AI operations: 20 req/5min per IP
+
+---
+
+## Phase 6.8: API Enhancements ✅
+
+### 6.8.1 sourceName Field ✅
+- [x] Added `sourceName` to article list responses
+- [x] Added `sourceName` to article detail responses
+- [x] Uses LEFT JOIN on sources table
+- [x] Eliminates need for client-side source ID mapping
+- [x] Returns null if source not found (graceful degradation)
+
+### 6.8.2 forecastSummary Field ✅
+- [x] Added `forecast_summary` column to articles table
+- [x] Created database migration script
+- [x] Implemented `generateForecastSummary()` AI function
+- [x] Generates investor-focused summary separate from article summary
+- [x] Included in article responses for client convenience
+- [x] Uses same AI provider as other operations
+
+**Benefits:**
+- Client gets both article summary and investment forecast in one request
+- No need for separate forecast endpoint call
+- Consistent AI-generated content across all articles
+
+---
+
+## Current Production Statistics (2025-10-25)
+
+### Article Quality Metrics
+- **Total articles in database:** 1 (after cleanup from 64)
+- **Rejection rate:** ~99% (strict quality criteria)
+- **Articles found per monitoring run:** 130 (after Phase 1 expansion)
+- **Common rejection reasons:**
+  - 108 filtered by keyword (ads, subscriptions)
+  - 10+ rejected for no valid images
+  - Multiple rejected for duplicate images/titles
+
+### Feed Performance
+- **RSS feeds:** 8 sources
+- **Google News queries:** 10 topics
+- **Monitoring frequency:** Every 30 minutes
+- **Articles found increase:** 225% (40 → 130 per run)
+
+### Quality Enforcement
+- ✅ All images validated (HTTP 200, 10s timeout)
+- ✅ No duplicate images allowed
+- ✅ No duplicate titles allowed
+- ✅ Title must differ from summary
+- ✅ Must contain stock symbols
+- ✅ No advertisement keywords
+
+### Next Steps for Improvement
+- [ ] Consider relaxing image uniqueness for different articles
+- [ ] Add more diverse news sources
+- [ ] Implement AI image generation fallback
+- [ ] Fine-tune keyword filters to reduce false positives
 
 ---
 
