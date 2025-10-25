@@ -15,7 +15,6 @@ async function resolveUrl(url: string): Promise<string> {
     });
     return response.url;
   } catch (error) {
-          failed++;
     return url; // Return original if resolution fails
   }
 }
