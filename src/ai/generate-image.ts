@@ -76,7 +76,8 @@ export async function generateImage(title: string, symbol: string): Promise<stri
     
     fs.writeFileSync(filepath, Buffer.from(b64Data, 'base64'));
 
-    return `/images/${filename}`;
+    const baseUrl = process.env.API_URL || 'https://api.news.biaz.hurated.com';
+    return `${baseUrl}/images/${filename}`;
   } catch (error) {
     console.error('DALL-E image generation failed:', error);
     return null;
