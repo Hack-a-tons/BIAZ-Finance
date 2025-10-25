@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import mockData from '../mock-data.json';
 import pool from './db';
+import './cache'; // Initialize Redis connection
 
 dotenv.config();
 
