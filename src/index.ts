@@ -108,7 +108,7 @@ app.get('/v1/articles', async (req, res) => {
     const offset = (pageNum - 1) * limitNum;
     
     let query = `
-      SELECT DISTINCT a.id, a.title, a.summary, a.url, a.image_url, a.published_at,
+      SELECT DISTINCT a.id, a.title, a.summary, a.forecast_summary, a.url, a.image_url, a.published_at,
              a.source_id, s.name as source_name, a.truth_score, a.impact_sentiment
       FROM articles a
       LEFT JOIN article_symbols asym ON a.id = asym.article_id
@@ -152,6 +152,7 @@ app.get('/v1/articles', async (req, res) => {
         id: row.id,
         title: row.title,
         summary: row.summary,
+        forecastSummary: row.forecast_summary,
         url: row.url,
         imageUrl: row.image_url,
         publishedAt: row.published_at,
@@ -253,6 +254,7 @@ app.get('/v1/articles/:id', async (req, res) => {
       id: article.id,
       title: article.title,
       summary: article.summary,
+      forecastSummary: article.forecast_summary,
       url: article.url,
       imageUrl: article.image_url,
       publishedAt: article.published_at,

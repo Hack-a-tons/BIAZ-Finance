@@ -9,6 +9,34 @@ export interface GeneratedForecast {
   timeHorizon: '1_day' | '1_week' | '1_month' | '3_months';
   confidence: number;
   reasoning: string;
+  summary?: string;
+}
+
+export async function generateForecastSummary(
+  article: { title: string; fullText: string; truthScore: number },
+  symbols: string[]
+): Promise<string> {
+  const cacheKey = aiCacheKey('forecast-summary', article.title);
+  const cached = await cacheGet(cacheKey);
+  if (cached) return cached;
+
+  const prompt = `Based on this financial news article, generate a concise 1-2 sentence impact forecast summary for investors.
+
+Article: ${article.title}
+Stocks: ${symbols.join(', ')}
+Truth Score: ${article.truthScore.toFixed(2)}
+
+Focus on: What this means for stock prices, investor sentiment, and market impact.
+Be specific and actionable. Do not repeat the article title.`;
+
+  const response = await chat([
+    { role: 'system', content: 'You are a financial analyst providing concise market impact summaries.' },
+    { role: 'user', content: prompt }
+  ], 0.3);
+
+  const summary = response.trim();
+  await cacheSet(cacheKey, summary, 21600); // 6 hours
+  return summary;
 }
 
 export async function generateForecast(

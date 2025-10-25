@@ -129,7 +129,15 @@ export async function ingestArticle(url: string, manualSymbol?: string, rssItem?
     // 7. Determine impact sentiment
     const impactSentiment = determineImpactSentiment(verifiedClaims, fetched.fullText);
 
-    // 8. Store in database
+    // 8. Generate forecast summary
+    const { generateForecastSummary } = await import('../ai/generate-forecast');
+    const forecastSummary = await generateForecastSummary(
+      { title: fetched.title, fullText: fetched.fullText, truthScore },
+      symbols
+    );
+    console.log(`[${new Date().toISOString()}] Generated forecast summary`);
+
+    // 9. Store in database
     const articleId = `art_${Date.now()}`;
     
     // Validate and set image URL
@@ -174,12 +182,13 @@ export async function ingestArticle(url: string, manualSymbol?: string, rssItem?
     }
     
     await query(
-      `INSERT INTO articles (id, title, summary, url, image_url, published_at, source_id, truth_score, impact_sentiment, explanation)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      `INSERT INTO articles (id, title, summary, forecast_summary, url, image_url, published_at, source_id, truth_score, impact_sentiment, explanation)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
       [
         articleId,
         fetched.title,
         fetched.summary,
+        forecastSummary,
         url,
         imageUrl,
         fetched.publishedAt,

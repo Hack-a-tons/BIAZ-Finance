@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS articles (
   id VARCHAR(50) PRIMARY KEY,
   title TEXT NOT NULL,
   summary TEXT,
+  forecast_summary TEXT,
   url TEXT NOT NULL,
   image_url TEXT,
   published_at TIMESTAMP NOT NULL,
