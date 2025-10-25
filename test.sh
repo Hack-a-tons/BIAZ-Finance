@@ -41,16 +41,27 @@ run_test() {
   local args="$@"
   
   TOTAL=$((TOTAL + 1))
-  echo -n "Testing $script $action $args... "
+  echo "Testing $script $action $args..."
   
-  if output=$(./tests/$script $VERBOSE $action $args 2>&1); then
-    echo "✓ PASS"
-    PASSED=$((PASSED + 1))
+  if [ -n "$VERBOSE" ]; then
+    if ./tests/$script $VERBOSE $action $args; then
+      echo "✓ PASS"
+      PASSED=$((PASSED + 1))
+    else
+      echo "✗ FAIL"
+      FAILED=$((FAILED + 1))
+    fi
   else
-    echo "✗ FAIL"
-    FAILED=$((FAILED + 1))
-    [ -n "$VERBOSE" ] && echo "$output"
+    if output=$(./tests/$script $action $args 2>&1); then
+      echo "✓ PASS"
+      PASSED=$((PASSED + 1))
+    else
+      echo "✗ FAIL"
+      FAILED=$((FAILED + 1))
+      echo "$output"
+    fi
   fi
+  echo ""
 }
 
 echo "Running BIAZ Finance API Tests"
