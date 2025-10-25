@@ -9,12 +9,12 @@ import type { Article } from '../models';
 
 export async function ingestArticle(url: string, manualSymbol?: string, rssItem?: any, method: 'apify' | 'rss' | 'http' = 'apify'): Promise<Article> {
   try {
-    console.log(`Ingesting article: ${url}`);
+    console.log(`[${new Date().toISOString()}] Ingesting article: ${url}`);
 
     // Check if article already exists
     const existing = await query('SELECT id FROM articles WHERE url = $1', [url]);
     if (existing.rows.length > 0) {
-      console.log(`Article already exists: ${existing.rows[0].id}`);
+      console.log(`[${new Date().toISOString()}] Article already exists: ${existing.rows[0].id}`);
       // Return existing article with full details
       const articleId = existing.rows[0].id;
       const articleResult = await query(
@@ -73,7 +73,7 @@ export async function ingestArticle(url: string, manualSymbol?: string, rssItem?
         fetchMethod = 'apify';
       }
     } catch (error) {
-      console.log(`${fetchMethod} fetch failed, trying fallback...`);
+      console.log(`[${new Date().toISOString()}] ${fetchMethod} fetch failed, trying fallback...`);
       // Fallback chain: apify -> http -> rss
       if (fetchMethod === 'apify') {
         try {
@@ -87,18 +87,19 @@ export async function ingestArticle(url: string, manualSymbol?: string, rssItem?
       }
     }
     
-    console.log(`Fetched via ${fetchMethod}: ${fetched.title}`);
+    console.log(`[${new Date().toISOString()}] Fetched via ${fetchMethod}: ${fetched.title}`);
 
     // 2. Match or create source
     const sourceId = await matchSource(fetched.sourceDomain);
-    console.log(`Source: ${sourceId}`);
+    console.log(`[${new Date().toISOString()}] Source: ${sourceId}`);
 
     // 3. Extract symbols
     const symbols = await extractSymbols(fetched.title, fetched.fullText, manualSymbol);
-    console.log(`Symbols: ${symbols.join(', ')}`);
+    console.log(`[${new Date().toISOString()}] Symbols: ${symbols.join(', ')}`);
     
     // Reject articles without stocks
     if (symbols.length === 0) {
+      console.warn(`[${new Date().toISOString()}] Skipping article (no stock symbols): ${url}`);
       throw new Error('No stock symbols found in article');
     }
     
@@ -109,20 +110,21 @@ export async function ingestArticle(url: string, manualSymbol?: string, rssItem?
     const isAd = adKeywords.some(keyword => lowerTitle.includes(keyword) || lowerText.substring(0, 500).includes(keyword));
     
     if (isAd) {
+      console.warn(`[${new Date().toISOString()}] Skipping article (advertisement): ${url}`);
       throw new Error('Article appears to be an advertisement');
     }
 
     // 4. Extract claims
     const extractedClaims = await extractClaims(fetched.fullText, fetched.title);
-    console.log(`Extracted ${extractedClaims.length} claims`);
+    console.log(`[${new Date().toISOString()}] Extracted ${extractedClaims.length} claims`);
 
     // 5. Verify claims
     const verifiedClaims = await verifyClaims(extractedClaims, fetched.fullText);
-    console.log(`Verified ${verifiedClaims.filter(c => c.verified).length} claims`);
+    console.log(`[${new Date().toISOString()}] Verified ${verifiedClaims.filter(c => c.verified).length} claims`);
 
     // 6. Calculate truth score
     const truthScore = calculateTruthScore(verifiedClaims);
-    console.log(`Truth score: ${truthScore.toFixed(2)}`);
+    console.log(`[${new Date().toISOString()}] Truth score: ${truthScore.toFixed(2)}`);
 
     // 7. Determine impact sentiment
     const impactSentiment = determineImpactSentiment(verifiedClaims, fetched.fullText);
@@ -143,6 +145,7 @@ export async function ingestArticle(url: string, manualSymbol?: string, rssItem?
     
     // Reject articles without valid images
     if (!imageUrl) {
+      console.warn(`[${new Date().toISOString()}] Skipping article (no valid image): ${url}`);
       throw new Error('No valid image URL found for article');
     }
     
@@ -219,7 +222,7 @@ export async function ingestArticle(url: string, manualSymbol?: string, rssItem?
       }
     }
 
-    console.log(`Article ingested: ${articleId}`);
+    console.log(`[${new Date().toISOString()}] Article ingested: ${articleId}`);
 
     return {
       id: articleId,
@@ -243,7 +246,6 @@ export async function ingestArticle(url: string, manualSymbol?: string, rssItem?
       forecastId: null
     };
   } catch (error) {
-    console.error('Ingestion error:', error);
     throw error;
   }
 }

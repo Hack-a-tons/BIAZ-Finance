@@ -12,6 +12,9 @@ const app = express();
 const PORT = process.env.API_PORT || 23000;
 const startTime = Date.now();
 
+// Trust proxy - required for rate limiting behind nginx
+app.set('trust proxy', 1);
+
 app.use(cors());
 app.use(express.json());
 
