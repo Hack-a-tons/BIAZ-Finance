@@ -1,5 +1,38 @@
 # Changelog
 
+## 2025-10-25 - Clean Logging ✅
+
+### Changes
+- ✅ Replaced verbose `console.error()` with concise `console.warn()`
+- ✅ Removed stack traces from expected failures
+- ✅ Silent handling of image extraction failures (expected behavior)
+- ✅ Silent handling of article rejections (tracked in summary stats)
+
+### Before
+```log
+api-1 | [2025-10-25T20:11:19.312Z] All methods failed for https://news.google.com/rss/articles/...
+api-1 | Image extraction error: AxiosError: Request failed with status code 404
+api-1 |     at settle (/app/node_modules/axios/lib/core/settle.js:19:12)
+api-1 |     at IncomingMessage.handleStreamEnd (/app/node_modules/axios/lib/adapters/http.js:589:11)
+api-1 | [2025-10-25T20:11:26.187Z] Skipping article (no unique image): https://www.cnbc.com/...
+api-1 | Ingest error: Error: No valid unique image URL found for article
+api-1 |     at ingestArticle (/app/dist/services/ingest-article.js:175:19)
+api-1 |     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+```
+
+### After
+```log
+api-1 | [2025-10-25T20:20:49.169Z] Skipping article (no unique image): https://news.google.com/...
+api-1 | [2025-10-25T20:20:49.871Z] RSS monitoring complete: 40 found, 0 added, 2 cached, 35 skipped, rejected: 0 no-stocks + 3 no-image + 0 ads + 0 duplicates
+```
+
+All failures are now:
+- Tracked in summary statistics
+- Logged as concise warnings (not errors)
+- No stack traces for expected failures
+
+---
+
 ## 2025-10-25 - AI-Generated Forecast Summary ✅
 
 ### Implementation
