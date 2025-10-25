@@ -7,10 +7,10 @@ Client integration started against mock endpoints.
 
 ---
 
-## Phase 1: Database Schema & Models ⏳
+## Phase 1: Database Schema & Models ✅
 
-### 1.1 Database Schema
-- [ ] Create `schema.sql` with tables:
+### 1.1 Database Schema ✅
+- [x] Create `schema.sql` with tables:
   - `sources` (id, name, domain, credibility_score, category, verified_publisher)
   - `articles` (id, title, summary, url, image_url, published_at, source_id, truth_score, impact_sentiment, explanation, created_at, updated_at)
   - `article_symbols` (article_id, symbol) - many-to-many
@@ -18,14 +18,14 @@ Client integration started against mock endpoints.
   - `claim_evidence` (claim_id, url) - one-to-many
   - `stocks` (symbol PRIMARY KEY, name, exchange, sector, current_price, change, updated_at)
   - `forecasts` (id, article_id, symbol, sentiment, impact_score, price_target, time_horizon, confidence, reasoning, generated_at)
-- [ ] Add migration script to run schema on startup
-- [ ] Seed initial sources (Financial Times, Reuters, TechCrunch, etc.)
+- [x] Add migration script to run schema on startup
+- [x] Seed initial sources (Financial Times, Reuters, TechCrunch, etc.)
 
-### 1.2 Database Client
-- [ ] Install `pg` (PostgreSQL client for Node.js)
-- [ ] Create `src/db.ts` with connection pool
-- [ ] Create `src/models/` directory with TypeScript interfaces
-- [ ] Test database connection on startup
+### 1.2 Database Client ✅
+- [x] Install `pg` (PostgreSQL client for Node.js)
+- [x] Create `src/db.ts` with connection pool
+- [x] Create `src/models/` directory with TypeScript interfaces
+- [x] Test database connection on startup
 
 ---
 
