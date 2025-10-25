@@ -43,9 +43,8 @@ services:
       context: ./BF.project
       dockerfile: Dockerfile
     ports:
-      - "${WEB_PORT}:22000"
+      - "${WEB_PORT}:8081"
     environment:
-      - WEB_PORT=22000
       - API_URL=${API_URL}
       - WEB_URL=${WEB_URL}
     restart: unless-stopped

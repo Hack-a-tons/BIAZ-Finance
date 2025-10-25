@@ -9,7 +9,7 @@ RUN bun install --frozen-lockfile
 COPY . .
 
 # Expose port
-EXPOSE 22000
+EXPOSE 8081
 
 # Start web server
 CMD ["bun", "run", "start-web"]
