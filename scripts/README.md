@@ -34,16 +34,19 @@ Deploy to remote server with optional commit.
 
 Initialize database schema and seed data.
 
+**Automatic:** Runs automatically when PostgreSQL container starts for the first time (mounted in `compose.yml`).
+
+**Manual:** Can be executed directly in the container:
 ```bash
-./scripts/init-db.sh
+docker exec biaz-finance-postgres-1 psql -U biaz -d biaz_finance -f /docker-entrypoint-initdb.d/init-db.sh
 ```
 
 **What it does:**
-1. Creates all database tables
+1. Creates all database tables (sources, articles, stocks, article_symbols, claims, claim_evidence, forecasts)
 2. Seeds initial sources with credibility scores
 3. Sets up indexes and constraints
 
-**Note:** Run this once during initial setup or after database reset.
+**Note:** This script is mounted into the PostgreSQL container via `compose.yml` and runs automatically on first startup.
 
 ---
 
