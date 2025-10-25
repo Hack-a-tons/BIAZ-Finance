@@ -30,6 +30,31 @@ Deploy to remote server with optional commit.
 
 ## Database Management
 
+### cleanup-db.sh
+
+Clean up old data and optimize database.
+
+```bash
+./scripts/cleanup-db.sh
+```
+
+**What it does:**
+1. Archives articles older than 90 days (deletes with related data)
+2. Cleans orphaned records (claims, forecasts without articles)
+3. Vacuums database for performance
+4. Shows statistics
+
+**Automatic:** Runs weekly on Sunday at 3 AM (installed by `setup-cron.sh`)
+
+**Manual trigger:**
+```bash
+./scripts/cleanup-db.sh
+```
+
+**Note:** This is a destructive operation. Old articles are permanently deleted.
+
+---
+
 ### init-db.sh
 
 Initialize database schema and seed data.
@@ -153,6 +178,9 @@ Install all cron jobs for automated monitoring.
 **Cron jobs installed:**
 - RSS monitoring: `*/30 * * * *` → `logs/monitor.log`
 - Price updates: `*/15 * * * *` → `logs/prices.log`
+- Article rescoring: `0 2 * * *` → `logs/rescore.log`
+- Health checks: `*/5 * * * *` → `logs/health.log`
+- Database cleanup: `0 3 * * 0` → `logs/cleanup.log`
 
 **View logs:**
 ```bash

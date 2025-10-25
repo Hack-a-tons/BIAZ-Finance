@@ -178,10 +178,14 @@ curl https://api.news.biaz.hurated.com/v1/articles/art_1761408223432
   - Rate limited: 2 seconds between articles
   - Manual: `./scripts/rescore-articles.sh [days]`
 
-- [ ] **Database Cleanup** - Weekly on Sunday at 3 AM
-  - Archive articles older than 90 days
-  - Clean up orphaned records
-  - Vacuum database
+- [x] **Database Cleanup** - Weekly on Sunday at 3 AM
+  - Cron: `0 3 * * 0 ~/BIAZ-Finance/scripts/cleanup-cron.sh`
+  - Logs: `~/BIAZ-Finance/logs/cleanup.log`
+  - Archives articles older than 90 days
+  - Cleans orphaned records (claims, forecasts without articles)
+  - Vacuums database for performance
+  - Shows statistics after cleanup
+  - Manual: `./scripts/cleanup-db.sh`
 
 - [ ] **AI Cost Monitoring** - Daily at midnight
   - Track AI API usage and costs
