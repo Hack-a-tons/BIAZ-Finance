@@ -5,6 +5,7 @@ import { query } from '../db';
 
 const parser = new Parser();
 const log = (msg: string) => console.log(`[${new Date().toISOString()}] ${msg}`);
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Follow redirects to get actual URL
 async function resolveUrl(url: string): Promise<string> {
@@ -95,7 +96,9 @@ export async function monitorRSSFeeds(): Promise<void> {
           
           const success = results.find(r => r.status === 'fulfilled');
           if (success) {
+            await sleep(2000);
             ingested++;
+            // Wait 2s between ingestions to avoid rate limits
           } else {
             // Track rejection reasons
             const reasons = results.map(r => r.status === 'rejected' ? r.reason?.message : '').filter(Boolean);
@@ -173,7 +176,9 @@ export async function monitorGoogleNews(): Promise<void> {
           
           const success = results.find(r => r.status === 'fulfilled');
           if (success) {
+            await sleep(2000);
             ingested++;
+            // Wait 2s between ingestions to avoid rate limits
           } else {
             // Track rejection reasons
             const reasons = results.map(r => r.status === 'rejected' ? r.reason?.message : '').filter(Boolean);
