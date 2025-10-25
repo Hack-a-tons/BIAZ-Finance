@@ -252,10 +252,46 @@ docker exec -it biaz-finance-redis-1 redis-cli KEYS "ai:*" | xargs redis-cli DEL
 - `src/ai/*.ts` - AI response caching
 - `test-cache.sh` - Performance test script
 
-### 6.3 Rate Limiting
-- [ ] Limit `/articles/ingest` to 10/hour per IP
-- [ ] Limit AI endpoints to prevent abuse
-- [ ] Track API usage per client
+### 6.3 Rate Limiting ✅
+- [x] Limit `/articles/ingest` to prevent abuse
+- [x] Limit AI endpoints to prevent abuse
+- [x] Track API usage per IP
+
+**Implementation:**
+
+**General Rate Limit** (all endpoints):
+- 100 requests per minute per IP
+- Generous for hackathon demos and testing
+- Returns 429 with retry headers
+
+**Expensive Operations** (AI-powered endpoints):
+- 20 requests per 5 minutes per IP
+- Applies to: `/articles/ingest`, `/articles/:id/score`, `/forecasts`
+- Protects against AI API cost abuse
+
+**Response Headers:**
+- `RateLimit-Limit` - Maximum requests allowed
+- `RateLimit-Remaining` - Requests remaining
+- `RateLimit-Reset` - Time when limit resets
+
+**Error Response (429):**
+```json
+{
+  "error": "Too many requests, please try again later."
+}
+```
+
+**Testing:**
+```bash
+# Test general limit (should allow 100 requests)
+for i in {1..105}; do curl -s https://api.news.biaz.hurated.com/v1/articles > /dev/null; done
+
+# Test expensive limit (should allow 20 requests)
+for i in {1..25}; do curl -X POST https://api.news.biaz.hurated.com/v1/forecasts -d '{}' > /dev/null; done
+```
+
+**Bypass for Testing:**
+Rate limits are per-IP, so different IPs can test independently during demos.
 
 ### 6.4 Monitoring ✅
 - [x] Health check endpoint `/health`

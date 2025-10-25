@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import rateLimit from 'express-rate-limit';
 import mockData from '../mock-data.json';
 import pool from './db';
 import { cacheGet, cacheSet, articleListCacheKey } from './cache';
@@ -13,6 +14,26 @@ const startTime = Date.now();
 
 app.use(cors());
 app.use(express.json());
+
+// General rate limiter - generous for hackathon demos
+const generalLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 100, // 100 requests per minute per IP
+  message: { error: 'Too many requests, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Expensive operations limiter (AI-powered endpoints)
+const expensiveLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 20, // 20 requests per 5 minutes per IP
+  message: { error: 'Rate limit exceeded for this operation. Please wait a few minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use(generalLimiter);
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -257,7 +278,7 @@ app.get('/v1/articles/:id', async (req, res) => {
   }
 });
 
-app.post('/v1/articles/ingest', async (req, res) => {
+app.post('/v1/articles/ingest', expensiveLimiter, async (req, res) => {
   const { url, symbol } = req.body;
   if (!url) return res.status(400).json({ error: 'URL required' });
   
@@ -271,7 +292,7 @@ app.post('/v1/articles/ingest', async (req, res) => {
   }
 });
 
-app.post('/v1/articles/:id/score', async (req, res) => {
+app.post('/v1/articles/:id/score', expensiveLimiter, async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -541,7 +562,7 @@ app.get('/v1/forecasts/:id', async (req, res) => {
   }
 });
 
-app.post('/v1/forecasts', async (req, res) => {
+app.post('/v1/forecasts', expensiveLimiter, async (req, res) => {
   try {
     const { articleId, symbol } = req.body;
     
