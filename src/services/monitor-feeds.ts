@@ -1,3 +1,4 @@
+// @ts-ignore - rss-parser doesn't have types
 import Parser from 'rss-parser';
 import { ingestArticle } from './ingest-article';
 import { query } from '../db';

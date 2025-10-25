@@ -22,29 +22,180 @@ pool.query('SELECT NOW()', (err, res) => {
 });
 
 // Articles endpoints
-app.get('/v1/articles', (req, res) => {
-  const { symbol, from, source, page = '1', limit = '10' } = req.query;
-  let filtered = [...mockData.articles];
-  
-  if (symbol) filtered = filtered.filter(a => a.symbols.includes(symbol as string));
-  if (from) filtered = filtered.filter(a => new Date(a.publishedAt) >= new Date(from as string));
-  if (source) filtered = filtered.filter(a => a.source === source);
-  
-  const pageNum = parseInt(page as string);
-  const limitNum = parseInt(limit as string);
-  const start = (pageNum - 1) * limitNum;
-  const paginated = filtered.slice(start, start + limitNum);
-  
-  res.json({
-    data: paginated,
-    pagination: { page: pageNum, limit: limitNum, total: filtered.length }
-  });
+app.get('/v1/articles', async (req, res) => {
+  try {
+    const { symbol, from, source, page = '1', limit = '10' } = req.query;
+    const pageNum = parseInt(page as string);
+    const limitNum = parseInt(limit as string);
+    const offset = (pageNum - 1) * limitNum;
+    
+    let query = `
+      SELECT DISTINCT a.id, a.title, a.summary, a.url, a.image_url, a.published_at,
+             a.source_id as source, a.truth_score, a.impact_sentiment
+      FROM articles a
+      LEFT JOIN article_symbols asym ON a.id = asym.article_id
+      WHERE 1=1
+    `;
+    const params: any[] = [];
+    let paramCount = 0;
+    
+    if (symbol) {
+      paramCount++;
+      query += ` AND asym.symbol = $${paramCount}`;
+      params.push(symbol);
+    }
+    
+    if (from) {
+      paramCount++;
+      query += ` AND a.published_at >= $${paramCount}`;
+      params.push(from);
+    }
+    
+    if (source) {
+      paramCount++;
+      query += ` AND a.source_id = $${paramCount}`;
+      params.push(source);
+    }
+    
+    query += ` ORDER BY a.published_at DESC LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}`;
+    params.push(limitNum, offset);
+    
+    const result = await pool.query(query, params);
+    
+    // Get symbols for each article
+    const articles = await Promise.all(result.rows.map(async (row: any) => {
+      const symbolsResult = await pool.query(
+        'SELECT symbol FROM article_symbols WHERE article_id = $1',
+        [row.id]
+      );
+      
+      return {
+        id: row.id,
+        title: row.title,
+        summary: row.summary,
+        url: row.url,
+        imageUrl: row.image_url,
+        publishedAt: row.published_at,
+        source: row.source,
+        symbols: symbolsResult.rows.map((s: any) => s.symbol),
+        truthScore: row.truth_score ? parseFloat(row.truth_score) : null,
+        impactSentiment: row.impact_sentiment
+      };
+    }));
+    
+    // Get total count
+    let countQuery = 'SELECT COUNT(DISTINCT a.id) FROM articles a LEFT JOIN article_symbols asym ON a.id = asym.article_id WHERE 1=1';
+    const countParams: any[] = [];
+    let countParamNum = 0;
+    
+    if (symbol) {
+      countParamNum++;
+      countQuery += ` AND asym.symbol = $${countParamNum}`;
+      countParams.push(symbol);
+    }
+    if (from) {
+      countParamNum++;
+      countQuery += ` AND a.published_at >= $${countParamNum}`;
+      countParams.push(from);
+    }
+    if (source) {
+      countParamNum++;
+      countQuery += ` AND a.source_id = $${countParamNum}`;
+      countParams.push(source);
+    }
+    
+    const countResult = await pool.query(countQuery, countParams);
+    const total = parseInt(countResult.rows[0].count);
+    
+    res.json({
+      data: articles,
+      pagination: { page: pageNum, limit: limitNum, total }
+    });
+  } catch (error: any) {
+    console.error('GET /articles error:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
-app.get('/v1/articles/:id', (req, res) => {
-  const article = mockData.articles.find(a => a.id === req.params.id);
-  if (!article) return res.status(404).json({ error: 'Article not found' });
-  res.json(article);
+app.get('/v1/articles/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Get article
+    const articleResult = await pool.query(
+      'SELECT * FROM articles WHERE id = $1',
+      [id]
+    );
+    
+    if (articleResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Article not found' });
+    }
+    
+    const article = articleResult.rows[0];
+    
+    // Get symbols
+    const symbolsResult = await pool.query(
+      'SELECT symbol FROM article_symbols WHERE article_id = $1',
+      [id]
+    );
+    
+    // Get claims with evidence
+    const claimsResult = await pool.query(
+      `SELECT c.id, c.text, c.verified, c.confidence,
+              array_agg(ce.url) FILTER (WHERE ce.url IS NOT NULL) as evidence_links
+       FROM claims c
+       LEFT JOIN claim_evidence ce ON c.id = ce.claim_id
+       WHERE c.article_id = $1
+       GROUP BY c.id, c.text, c.verified, c.confidence
+       ORDER BY c.created_at`,
+      [id]
+    );
+    
+    // Get forecast if exists
+    const forecastResult = await pool.query(
+      `SELECT id, symbol, sentiment, impact_score, price_target, 
+              time_horizon, confidence, reasoning, generated_at
+       FROM forecasts
+       WHERE article_id = $1
+       LIMIT 1`,
+      [id]
+    );
+    
+    res.json({
+      id: article.id,
+      title: article.title,
+      summary: article.summary,
+      url: article.url,
+      imageUrl: article.image_url,
+      publishedAt: article.published_at,
+      source: article.source_id,
+      symbols: symbolsResult.rows.map((s: any) => s.symbol),
+      truthScore: article.truth_score ? parseFloat(article.truth_score) : null,
+      impactSentiment: article.impact_sentiment,
+      explanation: article.explanation,
+      claims: claimsResult.rows.map((c: any) => ({
+        id: c.id,
+        text: c.text,
+        verified: c.verified,
+        confidence: parseFloat(c.confidence),
+        evidenceLinks: c.evidence_links || []
+      })),
+      forecast: forecastResult.rows.length > 0 ? {
+        id: forecastResult.rows[0].id,
+        symbol: forecastResult.rows[0].symbol,
+        sentiment: forecastResult.rows[0].sentiment,
+        impactScore: parseFloat(forecastResult.rows[0].impact_score),
+        priceTarget: parseFloat(forecastResult.rows[0].price_target),
+        timeHorizon: forecastResult.rows[0].time_horizon,
+        confidence: parseFloat(forecastResult.rows[0].confidence),
+        reasoning: forecastResult.rows[0].reasoning,
+        generatedAt: forecastResult.rows[0].generated_at
+      } : null
+    });
+  } catch (error: any) {
+    console.error('GET /articles/:id error:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 app.post('/v1/articles/ingest', async (req, res) => {
@@ -61,46 +212,197 @@ app.post('/v1/articles/ingest', async (req, res) => {
   }
 });
 
-app.post('/v1/articles/:id/score', (req, res) => {
-  const article = mockData.articles.find(a => a.id === req.params.id);
-  if (!article) return res.status(404).json({ error: 'Article not found' });
-  
-  res.json({
-    ...article,
-    truthScore: Math.random() * 0.3 + 0.7,
-    scoredAt: new Date().toISOString()
-  });
+app.post('/v1/articles/:id/score', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Get article
+    const articleResult = await pool.query(
+      'SELECT title, summary, url FROM articles WHERE id = $1',
+      [id]
+    );
+    
+    if (articleResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Article not found' });
+    }
+    
+    const article = articleResult.rows[0];
+    
+    // Get existing claims
+    const claimsResult = await pool.query(
+      'SELECT text, confidence FROM claims WHERE article_id = $1',
+      [id]
+    );
+    
+    if (claimsResult.rows.length === 0) {
+      return res.status(400).json({ error: 'No claims found for article' });
+    }
+    
+    // Re-verify claims
+    const { verifyClaims, calculateTruthScore } = await import('./ai/verify-claims');
+    const context = `${article.title}\n\n${article.summary}`;
+    const verifiedClaims = await verifyClaims(claimsResult.rows, context);
+    const truthScore = calculateTruthScore(verifiedClaims);
+    
+    // Update claims in database
+    for (const claim of verifiedClaims) {
+      await pool.query(
+        'UPDATE claims SET verified = $1, confidence = $2 WHERE article_id = $3 AND text = $4',
+        [claim.verified, claim.confidence, id, claim.text]
+      );
+      
+      // Update evidence links
+      await pool.query('DELETE FROM claim_evidence WHERE claim_id IN (SELECT id FROM claims WHERE article_id = $1 AND text = $2)', [id, claim.text]);
+      
+      if (claim.evidenceLinks.length > 0) {
+        const claimIdResult = await pool.query('SELECT id FROM claims WHERE article_id = $1 AND text = $2', [id, claim.text]);
+        if (claimIdResult.rows.length > 0) {
+          const claimId = claimIdResult.rows[0].id;
+          for (const link of claim.evidenceLinks) {
+            await pool.query('INSERT INTO claim_evidence (claim_id, url) VALUES ($1, $2)', [claimId, link]);
+          }
+        }
+      }
+    }
+    
+    // Update article truth score
+    await pool.query(
+      'UPDATE articles SET truth_score = $1, updated_at = NOW() WHERE id = $2',
+      [truthScore, id]
+    );
+    
+    // Return updated article
+    const updatedResult = await pool.query(
+      'SELECT * FROM articles WHERE id = $1',
+      [id]
+    );
+    
+    const symbolsResult = await pool.query(
+      'SELECT symbol FROM article_symbols WHERE article_id = $1',
+      [id]
+    );
+    
+    res.json({
+      id: updatedResult.rows[0].id,
+      title: updatedResult.rows[0].title,
+      summary: updatedResult.rows[0].summary,
+      url: updatedResult.rows[0].url,
+      imageUrl: updatedResult.rows[0].image_url,
+      publishedAt: updatedResult.rows[0].published_at,
+      source: updatedResult.rows[0].source_id,
+      symbols: symbolsResult.rows.map((s: any) => s.symbol),
+      truthScore: parseFloat(updatedResult.rows[0].truth_score),
+      impactSentiment: updatedResult.rows[0].impact_sentiment,
+      scoredAt: updatedResult.rows[0].updated_at
+    });
+  } catch (error: any) {
+    console.error('POST /articles/:id/score error:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Sources endpoints
-app.get('/v1/sources', (req, res) => {
-  res.json({ data: mockData.sources });
+app.get('/v1/sources', async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT id, name, domain, credibility_score, category, verified_publisher FROM sources ORDER BY name'
+    );
+    
+    res.json({
+      data: result.rows.map((row: any) => ({
+        id: row.id,
+        name: row.name,
+        domain: row.domain,
+        credibilityScore: parseFloat(row.credibility_score),
+        category: row.category,
+        verifiedPublisher: row.verified_publisher
+      }))
+    });
+  } catch (error: any) {
+    console.error('GET /sources error:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
-app.get('/v1/sources/:id', (req, res) => {
-  const source = mockData.sources.find(s => s.id === req.params.id);
-  if (!source) return res.status(404).json({ error: 'Source not found' });
-  res.json(source);
+app.get('/v1/sources/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query(
+      'SELECT id, name, domain, credibility_score, category, verified_publisher FROM sources WHERE id = $1',
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Source not found' });
+    }
+    
+    const row = result.rows[0];
+    res.json({
+      id: row.id,
+      name: row.name,
+      domain: row.domain,
+      credibilityScore: parseFloat(row.credibility_score),
+      category: row.category,
+      verifiedPublisher: row.verified_publisher
+    });
+  } catch (error: any) {
+    console.error('GET /sources/:id error:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
-app.post('/v1/sources', (req, res) => {
-  const { name, domain, credibilityScore } = req.body;
-  if (!name || !domain) return res.status(400).json({ error: 'Name and domain required' });
-  
-  const newSource = {
-    id: `src_${Date.now()}`,
-    name,
-    domain,
-    credibilityScore: credibilityScore || 0.5,
-    category: 'custom',
-    verifiedPublisher: false
-  };
-  
-  res.status(201).json(newSource);
+app.post('/v1/sources', async (req, res) => {
+  try {
+    const { name, domain, credibilityScore } = req.body;
+    
+    if (!name || !domain) {
+      return res.status(400).json({ error: 'Name and domain required' });
+    }
+    
+    const id = `src_${Date.now()}`;
+    const score = credibilityScore || 0.5;
+    
+    await pool.query(
+      'INSERT INTO sources (id, name, domain, credibility_score, category, verified_publisher) VALUES ($1, $2, $3, $4, $5, $6)',
+      [id, name, domain, score, 'custom', false]
+    );
+    
+    res.status(201).json({
+      id,
+      name,
+      domain,
+      credibilityScore: score,
+      category: 'custom',
+      verifiedPublisher: false
+    });
+  } catch (error: any) {
+    console.error('POST /sources error:', error);
+    if (error.code === '23505') { // Unique violation
+      res.status(409).json({ error: 'Domain already exists' });
+    } else {
+      res.status(500).json({ error: error.message });
+    }
+  }
 });
 
-app.delete('/v1/sources/:id', (req, res) => {
-  res.status(204).send();
+app.delete('/v1/sources/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const result = await pool.query(
+      'DELETE FROM sources WHERE id = $1 RETURNING id',
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Source not found' });
+    }
+    
+    res.status(204).send();
+  } catch (error: any) {
+    console.error('DELETE /sources/:id error:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Stocks endpoint
@@ -146,30 +448,110 @@ app.get('/v1/stocks', async (req, res) => {
 });
 
 // Forecasts endpoints
-app.get('/v1/forecasts/:id', (req, res) => {
-  const forecast = mockData.forecasts.find(f => f.id === req.params.id);
-  if (!forecast) return res.status(404).json({ error: 'Forecast not found' });
-  res.json(forecast);
+app.get('/v1/forecasts/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const result = await pool.query(
+      `SELECT id, article_id, symbol, sentiment, impact_score, price_target,
+              time_horizon, confidence, reasoning, generated_at
+       FROM forecasts WHERE id = $1`,
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Forecast not found' });
+    }
+    
+    const row = result.rows[0];
+    res.json({
+      id: row.id,
+      articleId: row.article_id,
+      symbol: row.symbol,
+      sentiment: row.sentiment,
+      impactScore: parseFloat(row.impact_score),
+      priceTarget: parseFloat(row.price_target),
+      timeHorizon: row.time_horizon,
+      confidence: parseFloat(row.confidence),
+      reasoning: row.reasoning,
+      generatedAt: row.generated_at
+    });
+  } catch (error: any) {
+    console.error('GET /forecasts/:id error:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
-app.post('/v1/forecasts', (req, res) => {
-  const { articleId, symbol } = req.body;
-  if (!articleId || !symbol) return res.status(400).json({ error: 'articleId and symbol required' });
-  
-  const newForecast = {
-    id: `fct_${Date.now()}`,
-    articleId,
-    symbol,
-    sentiment: 'neutral',
-    impactScore: 0.5,
-    priceTarget: 100.0,
-    timeHorizon: '1_week',
-    confidence: 0.75,
-    reasoning: 'Mock forecast - real implementation will use AI analysis',
-    generatedAt: new Date().toISOString()
-  };
-  
-  res.status(201).json(newForecast);
+app.post('/v1/forecasts', async (req, res) => {
+  try {
+    const { articleId, symbol } = req.body;
+    
+    if (!articleId || !symbol) {
+      return res.status(400).json({ error: 'articleId and symbol required' });
+    }
+    
+    // Get article
+    const articleResult = await pool.query(
+      'SELECT title, summary, truth_score FROM articles WHERE id = $1',
+      [articleId]
+    );
+    
+    if (articleResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Article not found' });
+    }
+    
+    const article = articleResult.rows[0];
+    
+    // Get current stock price
+    const stockResult = await pool.query(
+      'SELECT current_price FROM stocks WHERE symbol = $1',
+      [symbol]
+    );
+    
+    if (stockResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Stock not found' });
+    }
+    
+    const currentPrice = parseFloat(stockResult.rows[0].current_price);
+    
+    // Generate forecast with AI
+    const { generateForecast } = await import('./ai/generate-forecast');
+    const forecast = await generateForecast(
+      {
+        title: article.title,
+        summary: article.summary,
+        truthScore: parseFloat(article.truth_score) || 0.5
+      },
+      symbol,
+      currentPrice
+    );
+    
+    // Store in database
+    const id = `fct_${Date.now()}`;
+    await pool.query(
+      `INSERT INTO forecasts (id, article_id, symbol, sentiment, impact_score, price_target,
+                              time_horizon, confidence, reasoning, generated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())`,
+      [id, articleId, symbol, forecast.sentiment, forecast.impactScore, forecast.priceTarget,
+       forecast.timeHorizon, forecast.confidence, forecast.reasoning]
+    );
+    
+    res.status(201).json({
+      id,
+      articleId,
+      symbol,
+      sentiment: forecast.sentiment,
+      impactScore: forecast.impactScore,
+      priceTarget: forecast.priceTarget,
+      timeHorizon: forecast.timeHorizon,
+      confidence: forecast.confidence,
+      reasoning: forecast.reasoning,
+      generatedAt: new Date().toISOString()
+    });
+  } catch (error: any) {
+    console.error('POST /forecasts error:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Feed monitoring endpoint (admin only - add auth later)
