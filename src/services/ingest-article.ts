@@ -135,18 +135,42 @@ export async function ingestArticle(url: string, manualSymbol?: string, rssItem?
     // Validate and set image URL
     let imageUrl = null;
     if (fetched.imageUrl && await validateImageUrl(fetched.imageUrl)) {
-      imageUrl = fetched.imageUrl;
-    } else if (symbols.length > 0) {
-      const fallbackUrl = generateStockImage(symbols[0]);
-      if (await validateImageUrl(fallbackUrl)) {
-        imageUrl = fallbackUrl;
+      // Check if image already used by another article
+      const existingImage = await query('SELECT id FROM articles WHERE image_url = $1', [fetched.imageUrl]);
+      if (existingImage.rows.length === 0) {
+        imageUrl = fetched.imageUrl;
       }
     }
     
-    // Reject articles without valid images
+    if (!imageUrl && symbols.length > 0) {
+      const fallbackUrl = generateStockImage(symbols[0]);
+      if (await validateImageUrl(fallbackUrl)) {
+        // Check if fallback image already used
+        const existingFallback = await query('SELECT id FROM articles WHERE image_url = $1', [fallbackUrl]);
+        if (existingFallback.rows.length === 0) {
+          imageUrl = fallbackUrl;
+        }
+      }
+    }
+    
+    // Reject articles without valid unique images
     if (!imageUrl) {
-      console.warn(`[${new Date().toISOString()}] Skipping article (no valid image): ${url}`);
-      throw new Error('No valid image URL found for article');
+      console.warn(`[${new Date().toISOString()}] Skipping article (no unique image): ${url}`);
+      throw new Error('No valid unique image URL found for article');
+    }
+    
+    // Check for duplicate titles
+    const existingTitle = await query('SELECT id FROM articles WHERE title = $1', [fetched.title]);
+    if (existingTitle.rows.length > 0) {
+      console.warn(`[${new Date().toISOString()}] Skipping article (duplicate title): ${url}`);
+      throw new Error('Article with same title already exists');
+    }
+    
+    // Ensure title and summary are different
+    if (fetched.title === fetched.summary || fetched.summary.startsWith(fetched.title)) {
+      // Generate new summary from first sentence of article
+      const sentences = fetched.fullText.split(/[.!?]+/).filter(s => s.trim().length > 20);
+      fetched.summary = sentences.slice(0, 2).join('. ').trim() + '.';
     }
     
     await query(

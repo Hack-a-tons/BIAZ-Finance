@@ -109,9 +109,10 @@ app.get('/v1/articles', async (req, res) => {
     
     let query = `
       SELECT DISTINCT a.id, a.title, a.summary, a.url, a.image_url, a.published_at,
-             a.source_id as source, a.truth_score, a.impact_sentiment
+             a.source_id, s.name as source_name, a.truth_score, a.impact_sentiment
       FROM articles a
       LEFT JOIN article_symbols asym ON a.id = asym.article_id
+      LEFT JOIN sources s ON a.source_id = s.id
       WHERE 1=1
     `;
     const params: any[] = [];
@@ -154,7 +155,8 @@ app.get('/v1/articles', async (req, res) => {
         url: row.url,
         imageUrl: row.image_url,
         publishedAt: row.published_at,
-        source: row.source,
+        source: row.source_id,
+        sourceName: row.source_name,
         symbols: symbolsResult.rows.map((s: any) => s.symbol),
         truthScore: row.truth_score ? parseFloat(row.truth_score) : null,
         impactSentiment: row.impact_sentiment
@@ -206,7 +208,10 @@ app.get('/v1/articles/:id', async (req, res) => {
     
     // Get article
     const articleResult = await pool.query(
-      'SELECT * FROM articles WHERE id = $1',
+      `SELECT a.*, s.name as source_name 
+       FROM articles a 
+       LEFT JOIN sources s ON a.source_id = s.id 
+       WHERE a.id = $1`,
       [id]
     );
     
@@ -252,6 +257,7 @@ app.get('/v1/articles/:id', async (req, res) => {
       imageUrl: article.image_url,
       publishedAt: article.published_at,
       source: article.source_id,
+      sourceName: article.source_name,
       symbols: symbolsResult.rows.map((s: any) => s.symbol),
       truthScore: article.truth_score ? parseFloat(article.truth_score) : null,
       impactSentiment: article.impact_sentiment,

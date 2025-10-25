@@ -42,6 +42,7 @@ export async function monitorRSSFeeds(): Promise<void> {
   let rejectedNoStocks = 0;
   let rejectedNoImage = 0;
   let rejectedAd = 0;
+  let rejectedDuplicate = 0;
 
   for (const feedUrl of RSS_FEEDS) {
     try {
@@ -87,7 +88,8 @@ export async function monitorRSSFeeds(): Promise<void> {
             // Track rejection reasons
             const reasons = results.map(r => r.status === 'rejected' ? r.reason?.message : '').filter(Boolean);
             if (reasons.some(r => r.includes('no stock symbols'))) rejectedNoStocks++;
-            else if (reasons.some(r => r.includes('no valid image'))) rejectedNoImage++;
+            else if (reasons.some(r => r.includes('no valid') || r.includes('no unique'))) rejectedNoImage++;
+            else if (reasons.some(r => r.includes('duplicate'))) rejectedDuplicate++;
             else if (reasons.some(r => r.includes('advertisement'))) rejectedAd++;
             console.error(`[${new Date().toISOString()}] All methods failed for ${url}`);
           }
@@ -106,7 +108,7 @@ export async function monitorRSSFeeds(): Promise<void> {
     }
   }
 
-  log(`RSS monitoring complete: ${totalFound} found, ${ingested} added, ${cached} cached, ${skipped} skipped, rejected: ${rejectedNoStocks} no-stocks + ${rejectedNoImage} no-image + ${rejectedAd} ads`);
+  log(`RSS monitoring complete: ${totalFound} found, ${ingested} added, ${cached} cached, ${skipped} skipped, rejected: ${rejectedNoStocks} no-stocks + ${rejectedNoImage} no-image + ${rejectedAd} ads + ${rejectedDuplicate} duplicates`);
 }
 
 export async function monitorGoogleNews(): Promise<void> {
@@ -118,6 +120,7 @@ export async function monitorGoogleNews(): Promise<void> {
   let rejectedNoStocks = 0;
   let rejectedNoImage = 0;
   let rejectedAd = 0;
+  let rejectedDuplicate = 0;
 
   for (const searchQuery of GOOGLE_NEWS_QUERIES) {
     try {
@@ -157,7 +160,8 @@ export async function monitorGoogleNews(): Promise<void> {
             // Track rejection reasons
             const reasons = results.map(r => r.status === 'rejected' ? r.reason?.message : '').filter(Boolean);
             if (reasons.some(r => r.includes('no stock symbols'))) rejectedNoStocks++;
-            else if (reasons.some(r => r.includes('no valid image'))) rejectedNoImage++;
+            else if (reasons.some(r => r.includes('no valid') || r.includes('no unique'))) rejectedNoImage++;
+            else if (reasons.some(r => r.includes('duplicate'))) rejectedDuplicate++;
             else if (reasons.some(r => r.includes('advertisement'))) rejectedAd++;
             console.error(`[${new Date().toISOString()}] All methods failed for ${url}`);
           }
@@ -176,7 +180,7 @@ export async function monitorGoogleNews(): Promise<void> {
     }
   }
 
-  log(`Google News monitoring complete: ${totalFound} found, ${ingested} added, ${cached} cached, rejected: ${rejectedNoStocks} no-stocks + ${rejectedNoImage} no-image + ${rejectedAd} ads`);
+  log(`Google News monitoring complete: ${totalFound} found, ${ingested} added, ${cached} cached, rejected: ${rejectedNoStocks} no-stocks + ${rejectedNoImage} no-image + ${rejectedAd} ads + ${rejectedDuplicate} duplicates`);
 }
 
 export async function runFeedMonitoring(): Promise<void> {
