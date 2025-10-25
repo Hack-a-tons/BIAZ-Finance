@@ -1,4 +1,6 @@
 import { ApifyClient } from 'apify-client';
+import axios from 'axios';
+import * as cheerio from 'cheerio';
 
 const client = new ApifyClient({
   token: process.env.APIFY_API_TOKEN,
@@ -10,7 +12,7 @@ export interface FetchedArticle {
   fullText: string;
   publishedAt: string;
   sourceDomain: string;
-  imageUrl?: string;
+  imageUrl: string; // Now required
 }
 
 export async function fetchArticle(url: string): Promise<FetchedArticle> {
@@ -36,7 +38,19 @@ export async function fetchArticle(url: string): Promise<FetchedArticle> {
     const title = (item.metadata?.title as string) || extractTitle(fullText);
     const summary = generateSummary(fullText);
     const publishedAt = (item.metadata?.publishedTime as string) || new Date().toISOString();
-    const imageUrl = (item.metadata?.image || item.metadata?.ogImage) as string | undefined;
+    
+    // Extract image - try multiple methods
+    let imageUrl = (item.metadata?.image || item.metadata?.ogImage) as string | undefined;
+    
+    if (!imageUrl) {
+      // Fallback: scrape the page directly for images
+      const extracted = await extractImageFromUrl(url);
+      if (extracted) imageUrl = extracted;
+    }
+    
+    if (!imageUrl) {
+      throw new Error('No image found for article');
+    }
 
     return {
       title,
@@ -48,8 +62,68 @@ export async function fetchArticle(url: string): Promise<FetchedArticle> {
     };
   } catch (error) {
     console.error('Apify fetch error:', error);
-    throw new Error(`Failed to fetch article: ${error}`);
+    throw error;
   }
+}
+
+async function extractImageFromUrl(url: string): Promise<string | null> {
+  try {
+    const response = await axios.get(url, {
+      timeout: 10000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; BIAZ-Finance/1.0)',
+      },
+    });
+    
+    const $ = cheerio.load(response.data);
+    
+    // Try Open Graph image
+    const ogImage = $('meta[property="og:image"]').attr('content');
+    if (ogImage && isValidImageUrl(ogImage)) return ogImage;
+    
+    // Try Twitter card image
+    const twitterImage = $('meta[name="twitter:image"]').attr('content');
+    if (twitterImage && isValidImageUrl(twitterImage)) return twitterImage;
+    
+    // Try article images
+    const articleImage = $('article img').first().attr('src');
+    if (articleImage && isValidImageUrl(articleImage)) {
+      return makeAbsoluteUrl(articleImage, url);
+    }
+    
+    // Try any large image
+    const largeImage = $('img[width], img[height]').filter((_, el) => {
+      const width = parseInt($(el).attr('width') || '0');
+      const height = parseInt($(el).attr('height') || '0');
+      return width >= 400 || height >= 300;
+    }).first().attr('src');
+    
+    if (largeImage && isValidImageUrl(largeImage)) {
+      return makeAbsoluteUrl(largeImage, url);
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Image extraction error:', error);
+    return null;
+  }
+}
+
+function isValidImageUrl(url: string): boolean {
+  if (!url) return false;
+  const lower = url.toLowerCase();
+  return lower.match(/\.(jpg|jpeg|png|webp|gif)(\?|$)/i) !== null;
+}
+
+function makeAbsoluteUrl(imageUrl: string, baseUrl: string): string {
+  if (imageUrl.startsWith('http')) return imageUrl;
+  if (imageUrl.startsWith('//')) return 'https:' + imageUrl;
+  
+  const base = new URL(baseUrl);
+  if (imageUrl.startsWith('/')) {
+    return `${base.protocol}//${base.host}${imageUrl}`;
+  }
+  return `${base.protocol}//${base.host}/${imageUrl}`;
 }
 
 function extractTitle(text: string): string {

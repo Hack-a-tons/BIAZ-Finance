@@ -9,9 +9,10 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@command-center/command-center": "^0.3.2",
     "@google/generative-ai": "^0.21.0",
     "apify-client": "^2.9.3",
+    "axios": "^1.12.2",
+    "cheerio": "^1.1.2",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
