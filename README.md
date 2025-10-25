@@ -31,7 +31,7 @@ Deliver the world’s first “truth-scored finance news feed” — real headli
 ## 2. API (for the Mobile Client)
 
 **Base URL** — always from `.env`:  
-`http://localhost:${API_PORT}/v1`
+`https://api.news.biaz.hurated.com/v1`
 
 ### Core Endpoints
 

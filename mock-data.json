@@ -1,0 +1,160 @@
+{
+  "articles": [
+    {
+      "id": "art_001",
+      "title": "Apple Announces Record Q4 Revenue Driven by iPhone Sales",
+      "summary": "Apple Inc. reported quarterly revenue of $89.5 billion, beating analyst expectations with strong iPhone 15 sales in emerging markets.",
+      "url": "https://example.com/apple-q4-revenue",
+      "imageUrl": "https://picsum.photos/seed/apple1/800/600",
+      "publishedAt": "2025-10-24T14:30:00Z",
+      "source": "src_001",
+      "symbols": ["AAPL"],
+      "truthScore": 0.92,
+      "impactSentiment": "positive",
+      "claims": [
+        {
+          "id": "clm_001",
+          "text": "Apple reported quarterly revenue of $89.5 billion",
+          "verified": true,
+          "confidence": 0.95,
+          "evidenceLinks": ["https://investor.apple.com/q4-2025"]
+        },
+        {
+          "id": "clm_002",
+          "text": "Revenue beat analyst expectations",
+          "verified": true,
+          "confidence": 0.88,
+          "evidenceLinks": ["https://finance.yahoo.com/quote/AAPL"]
+        }
+      ],
+      "explanation": "Article claims verified against official Apple investor relations data and market analyst consensus. Revenue figures match SEC filings.",
+      "forecastId": "fct_001"
+    },
+    {
+      "id": "art_002",
+      "title": "Tesla Cybertruck Production Ramps Up to 1,000 Units Per Week",
+      "summary": "Tesla has successfully scaled Cybertruck production at its Texas Gigafactory, reaching a milestone of 1,000 units per week.",
+      "url": "https://example.com/tesla-cybertruck-production",
+      "imageUrl": "https://picsum.photos/seed/tesla1/800/600",
+      "publishedAt": "2025-10-23T09:15:00Z",
+      "source": "src_002",
+      "symbols": ["TSLA"],
+      "truthScore": 0.78,
+      "impactSentiment": "positive",
+      "claims": [
+        {
+          "id": "clm_003",
+          "text": "Cybertruck production reached 1,000 units per week",
+          "verified": false,
+          "confidence": 0.65,
+          "evidenceLinks": []
+        }
+      ],
+      "explanation": "Production numbers not officially confirmed by Tesla. Estimate based on delivery tracker data and supplier reports. Moderate confidence.",
+      "forecastId": "fct_002"
+    },
+    {
+      "id": "art_003",
+      "title": "Apple Faces EU Antitrust Investigation Over App Store Policies",
+      "summary": "European Commission launches formal investigation into Apple's App Store practices, potentially leading to billions in fines.",
+      "url": "https://example.com/apple-eu-antitrust",
+      "imageUrl": "https://picsum.photos/seed/apple2/800/600",
+      "publishedAt": "2025-10-22T16:45:00Z",
+      "source": "src_003",
+      "symbols": ["AAPL"],
+      "truthScore": 0.85,
+      "impactSentiment": "negative",
+      "claims": [
+        {
+          "id": "clm_004",
+          "text": "EU Commission launched formal investigation",
+          "verified": true,
+          "confidence": 0.92,
+          "evidenceLinks": ["https://ec.europa.eu/commission/presscorner"]
+        }
+      ],
+      "explanation": "Investigation confirmed by official EU Commission press release. Potential fine amounts are speculative.",
+      "forecastId": "fct_003"
+    }
+  ],
+  "sources": [
+    {
+      "id": "src_001",
+      "name": "Financial Times",
+      "domain": "ft.com",
+      "credibilityScore": 0.95,
+      "category": "mainstream_media",
+      "verifiedPublisher": true
+    },
+    {
+      "id": "src_002",
+      "name": "TechCrunch",
+      "domain": "techcrunch.com",
+      "credibilityScore": 0.88,
+      "category": "tech_media",
+      "verifiedPublisher": true
+    },
+    {
+      "id": "src_003",
+      "name": "Reuters",
+      "domain": "reuters.com",
+      "credibilityScore": 0.97,
+      "category": "news_agency",
+      "verifiedPublisher": true
+    }
+  ],
+  "stocks": [
+    {
+      "symbol": "AAPL",
+      "name": "Apple Inc.",
+      "exchange": "NASDAQ",
+      "sector": "Technology",
+      "articleCount": 2
+    },
+    {
+      "symbol": "TSLA",
+      "name": "Tesla, Inc.",
+      "exchange": "NASDAQ",
+      "sector": "Automotive",
+      "articleCount": 1
+    }
+  ],
+  "forecasts": [
+    {
+      "id": "fct_001",
+      "articleId": "art_001",
+      "symbol": "AAPL",
+      "sentiment": "positive",
+      "impactScore": 0.75,
+      "priceTarget": 185.50,
+      "timeHorizon": "1_week",
+      "confidence": 0.82,
+      "reasoning": "Strong revenue beat indicates continued demand. Emerging market growth suggests sustainable momentum. Expect 3-5% upside in near term.",
+      "generatedAt": "2025-10-24T14:35:00Z"
+    },
+    {
+      "id": "fct_002",
+      "articleId": "art_002",
+      "symbol": "TSLA",
+      "sentiment": "positive",
+      "impactScore": 0.65,
+      "priceTarget": 255.00,
+      "timeHorizon": "1_month",
+      "confidence": 0.70,
+      "reasoning": "Production ramp-up positive but unverified. If confirmed, could drive 5-8% upside. Monitor for official Tesla announcement.",
+      "generatedAt": "2025-10-23T09:20:00Z"
+    },
+    {
+      "id": "fct_003",
+      "articleId": "art_003",
+      "symbol": "AAPL",
+      "sentiment": "negative",
+      "impactScore": 0.45,
+      "priceTarget": 172.00,
+      "timeHorizon": "3_months",
+      "confidence": 0.68,
+      "reasoning": "EU investigation creates regulatory overhang. Historical precedent suggests 2-4% downside pressure until resolution. Long-term fundamentals remain strong.",
+      "generatedAt": "2025-10-22T16:50:00Z"
+    }
+  ]
+}
