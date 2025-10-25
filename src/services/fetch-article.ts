@@ -28,7 +28,7 @@ export async function fetchArticle(url: string): Promise<FetchedArticle> {
       throw new Error('No content extracted from URL');
     }
 
-    const item = items[0];
+    const item: any = items[0];
     const domain = new URL(url).hostname.replace('www.', '');
     
     // Extract text content
