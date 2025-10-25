@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Test DALL-E image generation using Azure OpenAI SDK format
+# Test DALL-E image generation using correct Azure OpenAI API format
 
 set -e
 
@@ -18,14 +18,15 @@ echo "Deployment: $DALLE_DEPLOYMENT_NAME"
 echo "Prompt: $PROMPT"
 echo ""
 
-# Use the correct Azure OpenAI Images API format
+# Correct Azure OpenAI Images API format
 curl -s -X POST \
-  "${DALLE_ENDPOINT}/openai/images/generations:submit?api-version=${DALLE_API_VERSION}" \
+  "${DALLE_ENDPOINT}/openai/deployments/${DALLE_DEPLOYMENT_NAME}/images/generations?api-version=${DALLE_API_VERSION}" \
   -H "Content-Type: application/json" \
   -H "api-key: ${DALLE_API_KEY}" \
   -d "{
+    \"model\": \"${DALLE_DEPLOYMENT_NAME}\",
     \"prompt\": \"$PROMPT\",
     \"size\": \"1024x1024\",
-    \"n\": 1,
-    \"model\": \"${DALLE_DEPLOYMENT_NAME}\"
+    \"quality\": \"standard\",
+    \"n\": 1
   }" | jq '.'
