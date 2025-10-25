@@ -10,8 +10,8 @@ RUN npm install
 COPY . .
 RUN npm run build
 
-RUN chmod +x init-db.sh
+RUN chmod +x scripts/init-db.sh
 
 EXPOSE 23000
 
-CMD ["sh", "-c", "./init-db.sh && npm start"]
+CMD ["sh", "-c", "./scripts/init-db.sh && npm start"]
