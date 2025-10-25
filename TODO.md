@@ -61,7 +61,7 @@ Client integration started against mock endpoints.
 
 ### 3.1 Article Fetcher
 - [ ] Create `src/services/fetch-article.ts`
-- [ ] Use existing `TAVILY_API_KEY` or `BROWSERBASE_API_KEY` from .env
+- [ ] Use Apify actors for news scraping (see https://docs.apify.com/llms.txt)
 - [ ] Extract: title, summary, full text, published date, source domain
 - [ ] Handle different article formats (HTML parsing)
 
@@ -199,7 +199,7 @@ Client integration started against mock endpoints.
 - ✅ Docker containers running (API + PostgreSQL)
 - ✅ Azure OpenAI credentials configured
 - ✅ Google Gemini credentials configured
-- ✅ Tavily & Browserbase API keys available
+- ✅ Apify API token configured ($29.58 credit available)
 - ✅ Mock API deployed and tested
 - ✅ Client integration started
 

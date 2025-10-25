@@ -15,6 +15,8 @@ services:
       - AZURE_API_VERSION=${AZURE_API_VERSION}
       - AZURE_DEPLOYMENT_NAME=${AZURE_DEPLOYMENT_NAME}
       - AI_PROVIDER=${AI_PROVIDER}
+      - APIFY_API_TOKEN=${APIFY_API_TOKEN}
+      - APIFY_USER_ID=${APIFY_USER_ID}
     depends_on:
       - postgres
     restart: unless-stopped
