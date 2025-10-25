@@ -82,10 +82,10 @@ export async function monitorGoogleNews(): Promise<void> {
   let ingested = 0;
   let cached = 0;
 
-  for (const query of GOOGLE_NEWS_QUERIES) {
+  for (const searchQuery of GOOGLE_NEWS_QUERIES) {
     try {
-      const googleNewsUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
-      console.log(`Fetching Google News: ${query}`);
+      const googleNewsUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(searchQuery)}&hl=en-US&gl=US&ceid=US:en`;
+      console.log(`Fetching Google News: ${searchQuery}`);
       
       const feed = await parser.parseURL(googleNewsUrl);
       
@@ -116,7 +116,7 @@ export async function monitorGoogleNews(): Promise<void> {
         }
       }
     } catch (error) {
-      console.error(`Google News error (${query}):`, error);
+      console.error(`Google News error (${searchQuery}):`, error);
     }
   }
 
