@@ -66,7 +66,17 @@ This backend supports **two interchangeable AI engines**, both configured in `.e
 
 ---
 
-## 4. TODO — Build Rules & Execution Plan
+## 4. Implementation Status
+
+**Current Phase:** Mockup API Complete ✅
+
+The mockup API is deployed and running at `https://api.news.biaz.hurated.com/v1` with all endpoints returning realistic mock data. Client integration has started.
+
+**Next Steps:** See [TODO.md](TODO.md) for detailed implementation plan.
+
+---
+
+## 5. TODO — Build Rules & Execution Plan
 
 ### Mandatory Rules
 
@@ -93,7 +103,7 @@ This backend supports **two interchangeable AI engines**, both configured in `.e
 
 ---
 
-## 5. Quickstart
+## 6. Quickstart
 
 ```bash
 cp .env.example .env   # fill at least one AI provider
