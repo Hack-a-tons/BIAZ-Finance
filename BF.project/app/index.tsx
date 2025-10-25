@@ -154,7 +154,6 @@ function NewsCard({ item }: { item: NewsItem }) {
             
             <Text style={[styles.newsTitle, { color: colors.text }]} numberOfLines={3}>{item.title}</Text>
             
-            <Text style={styles.newsSnippet} numberOfLines={2}>{item.snippet}</Text>
             </View>
           </LinearGradient>
         </View>
@@ -589,7 +588,6 @@ function DesktopNewsCard({ item }: { item: NewsItem }) {
                 </View>
                 
                 <Text style={[styles.newsTitle, { color: colors.text }]} numberOfLines={3}>{item.title}</Text>
-                <Text style={styles.newsSnippet} numberOfLines={2}>{item.snippet}</Text>
               </View>
             </LinearGradient>
           </View>

@@ -38,6 +38,23 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  web:
+    build:
+      context: ./BF.project
+      dockerfile: Dockerfile
+    ports:
+      - "${WEB_PORT}:22000"
+    environment:
+      - WEB_PORT=22000
+      - API_URL=${API_URL}
+      - WEB_URL=${WEB_URL}
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   postgres:
     image: postgres:16-alpine
     environment:
