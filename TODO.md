@@ -29,31 +29,31 @@ Client integration started against mock endpoints.
 
 ---
 
-## Phase 2: AI Integration Layer 🤖
+## Phase 2: AI Integration Layer ✅
 
-### 2.1 AI Client Setup
-- [ ] Create `src/ai/azure-client.ts` - Azure OpenAI wrapper
-- [ ] Create `src/ai/gemini-client.ts` - Google Gemini wrapper
-- [ ] Create `src/ai/index.ts` - Provider selector based on `AI_PROVIDER` env var
-- [ ] Add retry logic and error handling
+### 2.1 AI Client Setup ✅
+- [x] Create `src/ai/azure-client.ts` - Azure OpenAI wrapper
+- [x] Create `src/ai/gemini-client.ts` - Google Gemini wrapper
+- [x] Create `src/ai/index.ts` - Provider selector based on `AI_PROVIDER` env var
+- [x] Add retry logic and error handling
 
-### 2.2 Claim Extraction
-- [ ] Create `src/ai/extract-claims.ts`
-- [ ] Prompt: Extract factual claims from article text
-- [ ] Return structured array of claims
-- [ ] Test with sample articles
+### 2.2 Claim Extraction ✅
+- [x] Create `src/ai/extract-claims.ts`
+- [x] Prompt: Extract factual claims from article text
+- [x] Return structured array of claims
+- [x] Test with sample articles
 
-### 2.3 Claim Verification
-- [ ] Create `src/ai/verify-claims.ts`
-- [ ] For each claim, search for evidence (use web search API or AI reasoning)
-- [ ] Return verification status, confidence, evidence links
-- [ ] Calculate overall truth score (weighted average of claim confidences)
+### 2.3 Claim Verification ✅
+- [x] Create `src/ai/verify-claims.ts`
+- [x] For each claim, search for evidence (use web search API or AI reasoning)
+- [x] Return verification status, confidence, evidence links
+- [x] Calculate overall truth score (weighted average of claim confidences)
 
-### 2.4 Impact Forecasting
-- [ ] Create `src/ai/generate-forecast.ts`
-- [ ] Prompt: Analyze article + claims + truth score → predict stock impact
-- [ ] Return sentiment, impact score, price target, reasoning
-- [ ] Consider time horizon (1 day, 1 week, 1 month, 3 months)
+### 2.4 Impact Forecasting ✅
+- [x] Create `src/ai/generate-forecast.ts`
+- [x] Prompt: Analyze article + claims + truth score → predict stock impact
+- [x] Return sentiment, impact score, price target, reasoning
+- [x] Consider time horizon (1 day, 1 week, 1 month, 3 months)
 
 ---
 
