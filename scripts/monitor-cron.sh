@@ -11,7 +11,7 @@ cd "$SCRIPT_DIR"
 if [ -f .env ]; then
   source .env
 else
-  echo "$(date) [monitor-cron.sh] ERROR - .env not found in $SCRIPT_DIR"
+  echo "$(date) [MONITOR] ERROR - .env not found in $SCRIPT_DIR"
   exit 1
 fi
 
@@ -19,4 +19,4 @@ http_code=$(curl -X POST "${API_URL}/v1/admin/monitor-feeds" \
   -H "Content-Type: application/json" \
   -s -o /dev/null -w "%{http_code}")
 
-echo "$(date) [monitor-cron.sh] HTTP $http_code - POST ${API_URL}/v1/admin/monitor-feeds"
+echo "$(date) [MONITOR] HTTP $http_code - POST ${API_URL}/v1/admin/monitor-feeds"
