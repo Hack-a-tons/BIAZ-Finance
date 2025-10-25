@@ -5,11 +5,12 @@ source .env
 
 VERBOSE=false
 PROVIDER=""
+CUSTOM_PROMPT=""
 
 while [[ $# -gt 0 ]]; do
   case $1 in
     -h|--help)
-      echo "Usage: ./ai-test.sh [OPTIONS] [PROVIDER]"
+      echo "Usage: ./ai-test.sh [OPTIONS] [PROVIDER] [PROMPT]"
       echo ""
       echo "Test AI providers (Azure OpenAI or Gemini)"
       echo ""
@@ -22,11 +23,15 @@ while [[ $# -gt 0 ]]; do
       echo "  gemini           Test Google Gemini"
       echo "  both             Test both providers"
       echo ""
+      echo "Prompt:"
+      echo "  Any text after provider will be sent as custom prompt"
+      echo ""
       echo "Examples:"
       echo "  ./ai-test.sh"
       echo "  ./ai-test.sh azure"
-      echo "  ./ai-test.sh gemini"
-      echo "  ./ai-test.sh both"
+      echo "  ./ai-test.sh -v gemini"
+      echo "  ./ai-test.sh azure 'What is 2+2?'"
+      echo "  ./ai-test.sh -v both 'Explain quantum computing in one sentence'"
       exit 0
       ;;
     -v|--verbose)
@@ -38,12 +43,14 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     *)
+      CUSTOM_PROMPT="$1"
       shift
       ;;
   esac
 done
 
 [ -z "$PROVIDER" ] && PROVIDER="azure"
+[ -z "$CUSTOM_PROMPT" ] && CUSTOM_PROMPT="Say 'OK' if you can read this."
 
 GRAY='\033[0;90m'
 GREEN='\033[0;32m'
@@ -52,15 +59,22 @@ NC='\033[0m'
 
 test_provider() {
   local provider=$1
-  echo -n "Testing $provider... "
+  echo "Testing $provider..."
+  
+  if [ "$VERBOSE" = true ]; then
+    echo -e "${GRAY}Provider: $provider${NC}"
+    echo -e "${GRAY}Prompt: $CUSTOM_PROMPT${NC}"
+    echo ""
+  fi
   
   local temp_file="./test-ai-temp.ts"
   
-  cat > "$temp_file" << 'EOF'
+  cat > "$temp_file" << EOF
 import dotenv from 'dotenv';
 dotenv.config();
 
 const provider = process.argv[2];
+const prompt = process.argv[3];
 
 async function test() {
   try {
@@ -72,17 +86,30 @@ async function test() {
         endpoint: process.env.AZURE_OPENAI_ENDPOINT!,
         apiVersion: process.env.AZURE_API_VERSION!,
       });
+      
+      console.log('Request to Azure OpenAI:');
+      console.log('  Endpoint:', process.env.AZURE_OPENAI_ENDPOINT);
+      console.log('  Model:', process.env.AZURE_DEPLOYMENT_NAME);
+      console.log('  Message:', prompt);
+      console.log('');
+      
       const response = await client.chat.completions.create({
         model: process.env.AZURE_DEPLOYMENT_NAME!,
-        messages: [{ role: 'user', content: 'Say "OK" if you can read this.' }],
-        max_tokens: 10,
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 100,
       });
       console.log('Response:', response.choices[0]?.message?.content);
     } else {
       const { GoogleGenerativeAI } = await import('@google/generative-ai');
       const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
       const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL! });
-      const result = await model.generateContent('Say "OK" if you can read this.');
+      
+      console.log('Request to Google Gemini:');
+      console.log('  Model:', process.env.GEMINI_MODEL);
+      console.log('  Message:', prompt);
+      console.log('');
+      
+      const result = await model.generateContent(prompt);
       console.log('Response:', result.response.text());
     }
     process.exit(0);
@@ -96,17 +123,17 @@ test();
 EOF
 
   if [ "$VERBOSE" = true ]; then
-    echo ""
-    echo -e "${GRAY}Testing $provider provider...${NC}"
-    if npx ts-node "$temp_file" "$provider" 2>&1; then
+    if npx ts-node "$temp_file" "$provider" "$CUSTOM_PROMPT" 2>&1; then
+      echo ""
       echo -e "${GREEN}✓ $provider working${NC}"
     else
+      echo ""
       echo -e "${RED}✗ $provider failed${NC}"
       rm -f "$temp_file"
       return 1
     fi
   else
-    if npx ts-node "$temp_file" "$provider" > /dev/null 2>&1; then
+    if npx ts-node "$temp_file" "$provider" "$CUSTOM_PROMPT" 2>&1 | grep -q "Response:"; then
       echo -e "${GREEN}✓ PASS${NC}"
     else
       echo -e "${RED}✗ FAIL${NC}"
@@ -122,6 +149,7 @@ EOF
 if [ "$PROVIDER" = "both" ]; then
   test_provider "azure"
   AZURE_RESULT=$?
+  echo ""
   test_provider "gemini"
   GEMINI_RESULT=$?
   
