@@ -3,7 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import mockData from '../mock-data.json';
 import pool from './db';
-import './cache'; // Initialize Redis connection
+import { cacheGet, cacheSet, articleListCacheKey } from './cache';
 
 dotenv.config();
 
@@ -71,6 +71,14 @@ app.get('/health', async (req, res) => {
 app.get('/v1/articles', async (req, res) => {
   try {
     const { symbol, from, source, page = '1', limit = '10' } = req.query;
+    
+    // Check cache first
+    const cacheKey = articleListCacheKey({ symbol, from, source, page, limit });
+    const cached = await cacheGet(cacheKey);
+    if (cached) {
+      return res.json(JSON.parse(cached));
+    }
+    
     const pageNum = parseInt(page as string);
     const limitNum = parseInt(limit as string);
     const offset = (pageNum - 1) * limitNum;
@@ -153,10 +161,15 @@ app.get('/v1/articles', async (req, res) => {
     const countResult = await pool.query(countQuery, countParams);
     const total = parseInt(countResult.rows[0].count);
     
-    res.json({
+    const response = {
       data: articles,
       pagination: { page: pageNum, limit: limitNum, total }
-    });
+    };
+    
+    // Cache for 60 seconds
+    await cacheSet(cacheKey, JSON.stringify(response), 60);
+    
+    res.json(response);
   } catch (error: any) {
     console.error('GET /articles error:', error);
     res.status(500).json({ error: error.message });

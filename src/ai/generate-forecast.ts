@@ -1,5 +1,6 @@
 import { chat } from './index';
 import { getPrompt } from './prompts';
+import { cacheGet, cacheSet, aiCacheKey } from '../cache';
 
 export interface GeneratedForecast {
   sentiment: 'positive' | 'neutral' | 'negative';
@@ -15,6 +16,13 @@ export async function generateForecast(
   symbol: string,
   currentPrice: number
 ): Promise<GeneratedForecast> {
+  // Check cache
+  const cacheKey = aiCacheKey('forecast', `${symbol}:${article.title}:${currentPrice}`);
+  const cached = await cacheGet(cacheKey);
+  if (cached) {
+    return JSON.parse(cached);
+  }
+  
   const systemPrompt = getPrompt('generate-forecast-system');
   const userPrompt = getPrompt('generate-forecast-user', {
     symbol,
@@ -33,7 +41,12 @@ export async function generateForecast(
     const jsonMatch = response.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('No JSON object found in response');
     
-    return JSON.parse(jsonMatch[0]);
+    const forecast = JSON.parse(jsonMatch[0]);
+    
+    // Cache for 6 hours (forecasts can change with price)
+    await cacheSet(cacheKey, JSON.stringify(forecast), 21600);
+    
+    return forecast;
   } catch (error) {
     console.error('Failed to parse forecast:', error);
     return {

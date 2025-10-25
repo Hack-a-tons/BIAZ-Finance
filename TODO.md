@@ -190,14 +190,17 @@ curl https://api.news.biaz.hurated.com/v1/articles/art_1761408223432
 
 ### 6.2 Caching ✅
 - [x] Redis for stock prices (15 min TTL)
-- [ ] Cache AI responses for identical articles
-- [ ] Cache article lists (1 min TTL)
+- [x] Cache AI responses for identical articles (24 hours for claims/verification, 6 hours for forecasts)
+- [x] Cache article lists (60 seconds TTL)
 
 **Redis Features:**
 - Stock prices cached for 15 minutes
+- Article lists cached for 60 seconds
+- AI responses cached for 6-24 hours (deterministic results)
 - 256MB memory limit with LRU eviction
 - Persistent storage with volume
 - Automatic connection handling
+- Content-based cache keys for AI (hash-based deduplication)
 
 ### 6.3 Rate Limiting
 - [ ] Limit `/articles/ingest` to 10/hour per IP

@@ -35,4 +35,22 @@ export async function cacheDel(key: string): Promise<void> {
   }
 }
 
+// Helper: Generate cache key for article list queries
+export function articleListCacheKey(params: Record<string, any>): string {
+  const sorted = Object.keys(params).sort().map(k => `${k}:${params[k]}`).join('|');
+  return `articles:list:${sorted}`;
+}
+
+// Helper: Generate cache key for AI responses (based on content hash)
+export function aiCacheKey(operation: string, content: string): string {
+  // Simple hash function for content
+  let hash = 0;
+  for (let i = 0; i < content.length; i++) {
+    const char = content.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return `ai:${operation}:${Math.abs(hash)}`;
+}
+
 export default client;
