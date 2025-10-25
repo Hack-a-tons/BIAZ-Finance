@@ -57,24 +57,24 @@ Client integration started against mock endpoints.
 
 ---
 
-## Phase 3: News Ingestion Pipeline 📰
+## Phase 3: News Ingestion Pipeline ✅
 
-### 3.1 Article Fetcher
-- [ ] Create `src/services/fetch-article.ts`
-- [ ] Use Apify actors for news scraping (see https://docs.apify.com/llms.txt)
-- [ ] Extract: title, summary, full text, published date, source domain
-- [ ] Handle different article formats (HTML parsing)
+### 3.1 Article Fetcher ✅
+- [x] Create `src/services/fetch-article.ts`
+- [x] Use Apify actors for news scraping (see https://docs.apify.com/llms.txt)
+- [x] Extract: title, summary, full text, published date, source domain
+- [x] Handle different article formats (HTML parsing)
 
-### 3.2 Source Matching
-- [ ] Create `src/services/match-source.ts`
-- [ ] Match article domain to existing source in DB
-- [ ] If not found, create custom source with default credibility (0.5)
+### 3.2 Source Matching ✅
+- [x] Create `src/services/match-source.ts`
+- [x] Match article domain to existing source in DB
+- [x] If not found, create custom source with default credibility (0.5)
 
-### 3.3 Symbol Extraction
-- [ ] Create `src/services/extract-symbols.ts`
-- [ ] Use AI or regex to find stock symbols in article
-- [ ] Validate against known symbols
-- [ ] Allow manual symbol override in POST request
+### 3.3 Symbol Extraction ✅
+- [x] Create `src/services/extract-symbols.ts`
+- [x] Use AI or regex to find stock symbols in article
+- [x] Validate against known symbols
+- [x] Allow manual symbol override in POST request
 
 ---
 
