@@ -1,4 +1,5 @@
 import { AzureOpenAI } from 'openai';
+import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 
 const client = new AzureOpenAI({
   apiKey: process.env.AZURE_OPENAI_API_KEY,
@@ -10,7 +11,7 @@ export async function chat(messages: Array<{ role: string; content: string }>, t
   try {
     const response = await client.chat.completions.create({
       model: process.env.AZURE_DEPLOYMENT_NAME!,
-      messages,
+      messages: messages as ChatCompletionMessageParam[],
       temperature,
     });
     
