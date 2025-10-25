@@ -94,7 +94,7 @@ export async function monitorRSSFeeds(): Promise<void> {
             else if (reasons.some(r => r.includes('advertisement'))) rejectedAd++;
             else {
               failed++;
-              if (failed === 1 && reasons.length > 0) console.warn(`[${new Date().toISOString()}] Untracked: ${reasons[0]}`);
+              console.warn(`[${new Date().toISOString()}] Other #${failed}: ${reasons[0] || "unknown"}`);
             }
           }
         } catch (error) {
@@ -170,7 +170,7 @@ export async function monitorGoogleNews(): Promise<void> {
             else if (reasons.some(r => r.includes('advertisement'))) rejectedAd++;
             else {
               failed++;
-              if (failed === 1 && reasons.length > 0) console.warn(`[${new Date().toISOString()}] Untracked: ${reasons[0]}`);
+              console.warn(`[${new Date().toISOString()}] Other #${failed}: ${reasons[0] || "unknown"}`);
             }
           }
         } catch (error) {
