@@ -168,7 +168,7 @@ async function main() {
   console.log('Account Information:\n');
   console.log(`User ID: ${user?.id}`);
   console.log(`Email: ${user?.email || 'N/A'}`);
-  console.log(`Plan: ${user?.plan || 'N/A'}`);
+  console.log(`Plan: ${user?.plan?.name || user?.plan?.id || 'N/A'}`);
   console.log('');
   
   // Get usage stats
@@ -178,7 +178,8 @@ async function main() {
   console.log('Current Month Usage:');
   console.log(`  Period: ${firstDay.toLocaleDateString()} - ${now.toLocaleDateString()}`);
   console.log('');
-  console.log('Note: Check https://console.apify.com/billing for detailed usage');
+  console.log('For detailed usage and credits:');
+  console.log('  https://console.apify.com/billing');
 }
 
 main().catch(console.error);
