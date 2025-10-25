@@ -14,6 +14,21 @@ const startTime = Date.now();
 app.use(cors());
 app.use(express.json());
 
+// Request logging middleware
+app.use((req, res, next) => {
+  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+  const method = req.method;
+  const path = req.path;
+  const query = Object.keys(req.query).length > 0 ? `?${new URLSearchParams(req.query as any).toString()}` : '';
+  const body = req.body && Object.keys(req.body).length > 0 ? ` ${JSON.stringify(req.body)}` : '';
+  
+  // Truncate to 100 chars total
+  const summary = `${method} ${path}${query}${body}`.substring(0, 100);
+  
+  console.log(`[${new Date().toISOString()}] ${ip} - ${summary}`);
+  next();
+});
+
 // Test database connection
 pool.query('SELECT NOW()', (err, res) => {
   if (err) {
