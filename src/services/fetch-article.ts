@@ -32,11 +32,11 @@ export async function fetchArticle(url: string): Promise<FetchedArticle> {
     const domain = new URL(url).hostname.replace('www.', '');
     
     // Extract text content
-    const fullText = item.text || item.markdown || '';
-    const title = item.metadata?.title || extractTitle(fullText);
+    const fullText = (item.text || item.markdown || '') as string;
+    const title = (item.metadata?.title as string) || extractTitle(fullText);
     const summary = generateSummary(fullText);
-    const publishedAt = item.metadata?.publishedTime || new Date().toISOString();
-    const imageUrl = item.metadata?.image || item.metadata?.ogImage;
+    const publishedAt = (item.metadata?.publishedTime as string) || new Date().toISOString();
+    const imageUrl = (item.metadata?.image || item.metadata?.ogImage) as string | undefined;
 
     return {
       title,
