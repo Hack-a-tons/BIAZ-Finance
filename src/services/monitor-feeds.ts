@@ -35,13 +35,14 @@ export async function monitorRSSFeeds(): Promise<void> {
     let ingested = 0;
     let skipped = 0;
 
-    for (const item: any of items) {
+    for (const rawItem of items) {
+      const item: any = rawItem;
       try {
         const url = item.link || item.url;
         if (!url) continue;
 
         // Filter: only articles with stock-related keywords
-        const title = (item.title || '').toLowerCase();
+        const title = String(item.title || '').toLowerCase();
         const hasStockKeywords = ['stock', 'earnings', 'revenue', 'shares', 'market', 'aapl', 'tsla', 'nvda'].some(
           keyword => title.includes(keyword)
         );
@@ -52,7 +53,7 @@ export async function monitorRSSFeeds(): Promise<void> {
         }
 
         console.log(`Ingesting: ${item.title}`);
-        await ingestArticle(url);
+        await ingestArticle(String(url));
         ingested++;
 
         // Rate limit: don't overwhelm the system
@@ -86,13 +87,14 @@ export async function monitorGoogleNews(): Promise<void> {
 
     let ingested = 0;
 
-    for (const item: any of items) {
+    for (const rawItem of items) {
+      const item: any = rawItem;
       try {
         const url = item.link || item.url;
         if (!url) continue;
 
         console.log(`Ingesting: ${item.title}`);
-        await ingestArticle(url);
+        await ingestArticle(String(url));
         ingested++;
 
         if (ingested >= 10) {
