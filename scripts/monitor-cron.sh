@@ -2,9 +2,9 @@
 
 # Cron job to monitor news feeds every 30 minutes
 # Add to crontab with absolute path:
-# */30 * * * * /root/BIAZ-Finance/monitor-cron.sh >> /root/BIAZ-Finance/monitor.log 2>&1
+# */30 * * * * /root/BIAZ-Finance/scripts/monitor-cron.sh >> /root/BIAZ-Finance/monitor.log 2>&1
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$SCRIPT_DIR"
 
 # Load environment variables

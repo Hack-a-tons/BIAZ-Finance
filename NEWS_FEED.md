@@ -84,10 +84,10 @@ crontab -e
 
 # Add one of these lines (use absolute path, NOT $HOME):
 # Every 30 minutes:
-*/30 * * * * /root/BIAZ-Finance/monitor-cron.sh >> /root/BIAZ-Finance/monitor.log 2>&1
+*/30 * * * * /root/BIAZ-Finance/scripts/monitor-cron.sh >> /root/BIAZ-Finance/monitor.log 2>&1
 
 # Every hour:
-0 * * * * /root/BIAZ-Finance/monitor-cron.sh >> /root/BIAZ-Finance/monitor.log 2>&1
+0 * * * * /root/BIAZ-Finance/scripts/monitor-cron.sh >> /root/BIAZ-Finance/monitor.log 2>&1
 
 # Check logs:
 tail -f /root/BIAZ-Finance/monitor.log

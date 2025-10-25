@@ -110,6 +110,9 @@ cp .env.example .env   # fill at least one AI provider
 docker compose build
 docker compose up -d
 
-# Test (verbose)
-API_PORT=8080 ./test/articles_list.sh -v
+# Test all endpoints
+./test.sh -v
+
+# Deploy to server
+./scripts/deploy.sh biaz.hurated.com
 ```

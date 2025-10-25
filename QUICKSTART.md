@@ -87,10 +87,10 @@ All test scripts support `-h` for help and `-v` for verbose output.
 ### Deploy to Server
 ```bash
 # Simple deploy
-./deploy.sh biaz.hurated.com
+./scripts/deploy.sh biaz.hurated.com
 
 # Commit, push, then deploy
-./deploy.sh -m "Update API endpoints" biaz.hurated.com
+./scripts/deploy.sh -m "Update API endpoints" biaz.hurated.com
 ```
 
 The script will:
