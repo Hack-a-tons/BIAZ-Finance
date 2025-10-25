@@ -1,12 +1,13 @@
 import { query } from '../db';
 import { fetchArticle } from './fetch-article';
+import { fetchArticleRSS } from './fetch-article-rss';
 import { matchSource } from './match-source';
 import { extractSymbols } from './extract-symbols';
 import { extractClaims } from '../ai/extract-claims';
 import { verifyClaims, calculateTruthScore } from '../ai/verify-claims';
 import type { Article } from '../models';
 
-export async function ingestArticle(url: string, manualSymbol?: string): Promise<Article> {
+export async function ingestArticle(url: string, manualSymbol?: string, rssItem?: any, method: 'apify' | 'rss' | 'http' = 'apify'): Promise<Article> {
   try {
     console.log(`Ingesting article: ${url}`);
 
@@ -53,9 +54,40 @@ export async function ingestArticle(url: string, manualSymbol?: string): Promise
       };
     }
 
-    // 1. Fetch article content
-    const fetched = await fetchArticle(url);
-    console.log(`Fetched: ${fetched.title}`);
+    // 1. Fetch article content - try multiple methods
+    let fetched;
+    let fetchMethod = method;
+    
+    try {
+      if (method === 'rss' || rssItem) {
+        // Method 1: RSS parsing (fastest, lightest)
+        fetched = await fetchArticleRSS(url, rssItem);
+        fetchMethod = 'rss';
+      } else if (method === 'http') {
+        // Method 2: Direct HTTP + Cheerio
+        fetched = await fetchArticleRSS(url);
+        fetchMethod = 'http';
+      } else {
+        // Method 3: Apify (most robust, but has limits)
+        fetched = await fetchArticle(url);
+        fetchMethod = 'apify';
+      }
+    } catch (error) {
+      console.log(`${fetchMethod} fetch failed, trying fallback...`);
+      // Fallback chain: apify -> http -> rss
+      if (fetchMethod === 'apify') {
+        try {
+          fetched = await fetchArticleRSS(url, rssItem);
+          fetchMethod = 'http';
+        } catch (e) {
+          throw new Error(`All fetch methods failed: ${error}`);
+        }
+      } else {
+        throw error;
+      }
+    }
+    
+    console.log(`Fetched via ${fetchMethod}: ${fetched.title}`);
 
     // 2. Match or create source
     const sourceId = await matchSource(fetched.sourceDomain);

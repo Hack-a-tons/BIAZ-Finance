@@ -69,7 +69,7 @@ export async function monitorRSSFeeds(): Promise<void> {
 
         console.log(`Ingesting: ${item.title}`);
         try {
-          await ingestArticle(url);
+          await ingestArticle(url, undefined, item, 'rss');
           ingested++;
         } catch (error) {
           console.error(`Failed to ingest ${url}:`, error);
@@ -120,7 +120,7 @@ export async function monitorGoogleNews(): Promise<void> {
 
         console.log(`Ingesting: ${item.title}`);
         try {
-          await ingestArticle(url);
+          await ingestArticle(url, undefined, item, 'rss');
           ingested++;
         } catch (error) {
           console.error(`Failed to ingest ${url}:`, error);
