@@ -104,18 +104,45 @@ app.delete('/v1/sources/:id', (req, res) => {
 });
 
 // Stocks endpoint
-app.get('/v1/stocks', (req, res) => {
+app.get('/v1/stocks', async (req, res) => {
   const { search } = req.query;
-  let filtered = [...mockData.stocks];
   
-  if (search) {
-    const term = (search as string).toUpperCase();
-    filtered = filtered.filter(s => 
-      s.symbol.includes(term) || s.name.toUpperCase().includes(term)
+  try {
+    let queryText = 'SELECT symbol, name, exchange, sector, current_price, change FROM stocks';
+    let params: any[] = [];
+    
+    if (search) {
+      queryText += ' WHERE UPPER(symbol) LIKE $1 OR UPPER(name) LIKE $1';
+      params = [`%${(search as string).toUpperCase()}%`];
+    }
+    
+    const result = await pool.query(queryText, params);
+    
+    // Count articles per symbol
+    const stocksWithCounts = await Promise.all(
+      result.rows.map(async (stock: any) => {
+        const countResult = await pool.query(
+          'SELECT COUNT(*) FROM article_symbols WHERE symbol = $1',
+          [stock.symbol]
+        );
+        
+        return {
+          symbol: stock.symbol,
+          name: stock.name,
+          exchange: stock.exchange,
+          sector: stock.sector,
+          currentPrice: parseFloat(stock.current_price) || 0,
+          change: stock.change || 'N/A',
+          articleCount: parseInt(countResult.rows[0].count)
+        };
+      })
     );
+    
+    res.json({ data: stocksWithCounts });
+  } catch (error: any) {
+    console.error('Stocks error:', error);
+    res.status(500).json({ error: error.message });
   }
-  
-  res.json({ data: filtered });
 });
 
 // Forecasts endpoints
@@ -156,6 +183,23 @@ app.post('/v1/admin/monitor-feeds', async (req, res) => {
     res.json({ message: 'Feed monitoring started in background' });
   } catch (error: any) {
     console.error('Monitor feeds error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Stock price update endpoint (admin only)
+app.post('/v1/admin/update-prices', async (req, res) => {
+  try {
+    const { getStocksNeedingUpdate, updateStockPrices } = await import('./services/stock-prices');
+    
+    const symbols = await getStocksNeedingUpdate();
+    
+    // Run in background
+    updateStockPrices(symbols).catch(console.error);
+    
+    res.json({ message: `Updating prices for ${symbols.length} stocks`, symbols });
+  } catch (error: any) {
+    console.error('Update prices error:', error);
     res.status(500).json({ error: error.message });
   }
 });

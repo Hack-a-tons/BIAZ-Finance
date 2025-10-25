@@ -102,13 +102,34 @@ export async function ingestArticle(url: string, manualSymbol?: string): Promise
 
     // Store symbols
     for (const symbol of symbols) {
-      // Ensure stock exists
-      await query(
-        `INSERT INTO stocks (symbol, name, exchange, sector)
-         VALUES ($1, $2, $3, $4)
-         ON CONFLICT (symbol) DO NOTHING`,
-        [symbol, `${symbol} Inc.`, 'NASDAQ', 'Technology']
-      );
+      // Fetch and store stock info
+      try {
+        const { getStockPrice } = await import('./stock-prices');
+        const quote = await getStockPrice(symbol);
+        
+        if (quote) {
+          await query(
+            `INSERT INTO stocks (symbol, name, exchange, sector, current_price, change, updated_at)
+             VALUES ($1, $2, $3, $4, $5, $6, NOW())
+             ON CONFLICT (symbol) 
+             DO UPDATE SET 
+               name = EXCLUDED.name,
+               current_price = EXCLUDED.current_price,
+               change = EXCLUDED.change,
+               updated_at = NOW()`,
+            [symbol, quote.name, quote.exchange, 'Technology', quote.price, quote.change]
+          );
+        }
+      } catch (error) {
+        console.error(`Failed to fetch price for ${symbol}:`, error);
+        // Continue anyway with basic stock entry
+        await query(
+          `INSERT INTO stocks (symbol, name, exchange, sector)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT (symbol) DO NOTHING`,
+          [symbol, `${symbol} Inc.`, 'NASDAQ', 'Technology']
+        );
+      }
 
       await query(
         'INSERT INTO article_symbols (article_id, symbol) VALUES ($1, $2)',
