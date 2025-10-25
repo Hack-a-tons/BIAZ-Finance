@@ -1,4 +1,3 @@
-import yahooFinance from 'yahoo-finance2';
 import { query } from '../db';
 
 interface StockQuote {
@@ -21,8 +20,11 @@ export async function getStockPrice(symbol: string): Promise<StockQuote | null> 
       return cached.data;
     }
 
+    // Dynamic import for ESM module
+    const yahooFinance = await import('yahoo-finance2');
+    
     // Fetch from Yahoo Finance
-    const quote = await yahooFinance.quote(symbol);
+    const quote = await yahooFinance.default.quote(symbol);
     
     if (!quote || !quote.regularMarketPrice) {
       console.error(`No price data for ${symbol}`);
