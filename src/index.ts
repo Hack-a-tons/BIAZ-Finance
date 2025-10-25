@@ -17,6 +17,7 @@ app.set('trust proxy', 1);
 
 app.use(cors());
 app.use(express.json());
+app.use('/images', express.static('public/images'));
 
 // General rate limiter - generous for hackathon demos
 const generalLimiter = rateLimit({
