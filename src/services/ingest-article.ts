@@ -64,6 +64,21 @@ export async function ingestArticle(url: string, manualSymbol?: string): Promise
     // 3. Extract symbols
     const symbols = await extractSymbols(fetched.title, fetched.fullText, manualSymbol);
     console.log(`Symbols: ${symbols.join(', ')}`);
+    
+    // Reject articles without stocks
+    if (symbols.length === 0) {
+      throw new Error('No stock symbols found in article');
+    }
+    
+    // Reject advertisement articles
+    const lowerTitle = fetched.title.toLowerCase();
+    const lowerText = fetched.fullText.toLowerCase();
+    const adKeywords = ['subscribe to', 'sign up', 'get access', 'become a member', 'join now', 'premium content'];
+    const isAd = adKeywords.some(keyword => lowerTitle.includes(keyword) || lowerText.substring(0, 500).includes(keyword));
+    
+    if (isAd) {
+      throw new Error('Article appears to be an advertisement');
+    }
 
     // 4. Extract claims
     const extractedClaims = await extractClaims(fetched.fullText, fetched.title);
