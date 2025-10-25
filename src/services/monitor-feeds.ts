@@ -4,6 +4,19 @@ import { query } from '../db';
 
 const parser = new Parser();
 
+// Follow redirects to get actual URL
+async function resolveUrl(url: string): Promise<string> {
+  try {
+    const response = await fetch(url, { 
+      method: 'HEAD',
+      redirect: 'follow'
+    });
+    return response.url;
+  } catch (error) {
+    return url; // Return original if resolution fails
+  }
+}
+
 const RSS_FEEDS = [
   'https://www.ft.com/technology?format=rss',
   'https://techcrunch.com/feed/',
@@ -91,9 +104,12 @@ export async function monitorGoogleNews(): Promise<void> {
       
       for (const item of feed.items.slice(0, 10)) {
         totalFound++;
-        const url = item.link;
-        if (!url) continue;
+        const redirectUrl = item.link;
+        if (!redirectUrl) continue;
 
+        // Resolve Google News redirect to actual URL
+        const url = await resolveUrl(redirectUrl);
+        
         // Check if already in database
         const existing = await query('SELECT id FROM articles WHERE url = $1', [url]);
         if (existing.rows.length > 0) {
