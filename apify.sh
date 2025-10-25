@@ -168,7 +168,9 @@ async function main() {
   console.log('Account Information:\n');
   console.log(`User ID: ${user?.id}`);
   console.log(`Email: ${user?.email || 'N/A'}`);
-  console.log(`Plan: ${user?.plan?.name || user?.plan?.id || 'N/A'}`);
+  
+  const plan: any = user?.plan;
+  console.log(`Plan: ${plan?.name || plan?.id || JSON.stringify(plan) || 'N/A'}`);
   console.log('');
   
   // Get usage stats
