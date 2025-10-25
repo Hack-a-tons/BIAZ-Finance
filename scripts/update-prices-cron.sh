@@ -7,34 +7,21 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR/.."
 
-# Check if market is open (9:30 AM - 4:00 PM ET, Mon-Fri)
-# Convert current time to ET
+API_PORT=${API_PORT:-23000}
 HOUR=$(TZ=America/New_York date +%H)
 MINUTE=$(TZ=America/New_York date +%M)
-DAY=$(TZ=America/New_York date +%u) # 1=Mon, 7=Sun
+DAY=$(TZ=America/New_York date +%u)
 
 # Skip weekends
-if [ "$DAY" -gt 5 ]; then
-  echo "[$(date)] Weekend - skipping price update"
-  exit 0
-fi
+[ "$DAY" -gt 5 ] && { echo "$(date) [update-prices-cron.sh] SKIP - weekend"; exit 0; }
 
 # Skip outside market hours (9:30 AM - 4:00 PM)
-if [ "$HOUR" -lt 9 ] || [ "$HOUR" -gt 16 ]; then
-  echo "[$(date)] Outside market hours - skipping price update"
-  exit 0
-fi
+[ "$HOUR" -lt 9 ] || [ "$HOUR" -gt 16 ] && { echo "$(date) [update-prices-cron.sh] SKIP - outside market hours"; exit 0; }
+[ "$HOUR" -eq 9 ] && [ "$MINUTE" -lt 30 ] && { echo "$(date) [update-prices-cron.sh] SKIP - before market open"; exit 0; }
 
-if [ "$HOUR" -eq 9 ] && [ "$MINUTE" -lt 30 ]; then
-  echo "[$(date)] Before market open - skipping price update"
-  exit 0
-fi
-
-# Trigger price update via API
-echo "[$(date)] Triggering stock price update..."
-curl -f -X POST http://localhost:${API_PORT:-23000}/v1/admin/update-prices || {
-  echo "[$(date)] Failed to update prices"
+http_code=$(curl -sf -X POST http://localhost:$API_PORT/v1/admin/update-prices -w "%{http_code}" -o /dev/null) || {
+  echo "$(date) [update-prices-cron.sh] FAILED - HTTP $http_code POST localhost:$API_PORT/v1/admin/update-prices"
   exit 1
 }
 
-echo "[$(date)] Stock prices updated successfully"
+echo "$(date) [update-prices-cron.sh] OK - HTTP $http_code POST localhost:$API_PORT/v1/admin/update-prices"

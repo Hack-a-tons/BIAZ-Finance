@@ -10,20 +10,16 @@ cd "$SCRIPT_DIR/.."
 API_PORT=${API_PORT:-23000}
 HEALTH_URL="http://localhost:$API_PORT/health"
 
-# Check health endpoint
-if ! response=$(curl -sf "$HEALTH_URL" 2>&1); then
-  echo "[$(date)] ❌ Health check FAILED - API not responding"
-  echo "[$(date)] Error: $response"
+response=$(curl -sf "$HEALTH_URL" 2>&1) || {
+  echo "$(date) [health-check-cron.sh] FAILED - $HEALTH_URL not responding"
   exit 1
-fi
+}
 
-# Parse status
 status=$(echo "$response" | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
 
 if [ "$status" != "healthy" ]; then
-  echo "[$(date)] ⚠️  Health check WARNING - Status: $status"
-  echo "[$(date)] Response: $response"
+  echo "$(date) [health-check-cron.sh] WARNING - $HEALTH_URL status=$status"
   exit 1
 fi
 
-echo "[$(date)] ✅ Health check OK"
+echo "$(date) [health-check-cron.sh] OK - $HEALTH_URL status=healthy"

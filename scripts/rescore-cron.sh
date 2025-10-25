@@ -7,9 +7,10 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR/.."
 
-echo "[$(date)] Starting daily article re-scoring..."
+./scripts/rescore-articles.sh 7 > /tmp/rescore-output.txt 2>&1 || {
+  echo "$(date) [rescore-cron.sh] FAILED - rescore-articles.sh exited with error"
+  exit 1
+}
 
-# Re-score articles from last 7 days
-./scripts/rescore-articles.sh 7
-
-echo "[$(date)] Daily re-scoring complete"
+count=$(grep -c "Re-scored article" /tmp/rescore-output.txt 2>/dev/null || echo "0")
+echo "$(date) [rescore-cron.sh] OK - re-scored $count articles from last 7 days"
