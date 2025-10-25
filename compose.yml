@@ -10,6 +10,7 @@ services:
       - API_URL=${API_URL}
       - NODE_ENV=${NODE_ENV}
       - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=redis://redis:6379
       - POSTGRES_USER=biaz
       - POSTGRES_PASSWORD=biaz_password
       - POSTGRES_DB=biaz_finance
@@ -24,6 +25,7 @@ services:
       - APIFY_USER_ID=${APIFY_USER_ID}
     depends_on:
       - postgres
+      - redis
     restart: unless-stopped
 
   postgres:
@@ -36,5 +38,13 @@ services:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
 
+  redis:
+    image: redis:7-alpine
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
 volumes:
   postgres_data:
+  redis_data:

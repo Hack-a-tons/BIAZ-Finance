@@ -1,4 +1,5 @@
 import { query } from '../db';
+import { cacheGet, cacheSet } from '../cache';
 
 interface StockQuote {
   symbol: string;
@@ -8,16 +9,14 @@ interface StockQuote {
   exchange: string;
 }
 
-// Cache prices for 15 minutes
-const priceCache = new Map<string, { data: StockQuote; timestamp: number }>();
-const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes
+const CACHE_DURATION = 15 * 60; // 15 minutes in seconds
 
 export async function getStockPrice(symbol: string): Promise<StockQuote | null> {
   try {
-    // Check cache
-    const cached = priceCache.get(symbol);
-    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-      return cached.data;
+    // Check Redis cache
+    const cached = await cacheGet(`stock:${symbol}`);
+    if (cached) {
+      return JSON.parse(cached);
     }
 
     // Fetch from Yahoo Finance API (free, no key needed)
@@ -48,8 +47,8 @@ export async function getStockPrice(symbol: string): Promise<StockQuote | null> 
       exchange: meta.exchangeName || 'NASDAQ',
     };
 
-    // Cache it
-    priceCache.set(symbol, { data: stockQuote, timestamp: Date.now() });
+    // Cache in Redis
+    await cacheSet(`stock:${symbol}`, JSON.stringify(stockQuote), CACHE_DURATION);
 
     return stockQuote;
   } catch (error) {
