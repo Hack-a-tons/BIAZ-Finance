@@ -8,6 +8,7 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.API_PORT || 23000;
+const startTime = Date.now();
 
 app.use(cors());
 app.use(express.json());
@@ -19,6 +20,35 @@ pool.query('SELECT NOW()', (err, res) => {
   } else {
     console.log('Database connected:', res.rows[0].now);
   }
+});
+
+// Health check endpoint
+app.get('/health', async (req, res) => {
+  const checks: Record<string, string> = {};
+  let healthy = true;
+
+  // Check database
+  try {
+    await pool.query('SELECT 1');
+    checks.database = 'ok';
+  } catch (error) {
+    checks.database = 'error';
+    healthy = false;
+  }
+
+  // Check AI provider (optional - don't fail health check if AI is down)
+  const aiProvider = process.env.AI_PROVIDER || 'azure';
+  checks.ai = aiProvider;
+
+  const status = healthy ? 'healthy' : 'unhealthy';
+  const statusCode = healthy ? 200 : 503;
+
+  res.status(statusCode).json({
+    status,
+    timestamp: new Date().toISOString(),
+    uptime: Math.floor((Date.now() - startTime) / 1000),
+    checks
+  });
 });
 
 // Articles endpoints

@@ -21,6 +21,9 @@ sed -i.bak '/BIAZ-Finance/d' "$TEMP_CRON"
 # Add new jobs
 cat >> "$TEMP_CRON" << EOF
 
+# BIAZ Finance - Health Check (every 5 minutes)
+*/5 * * * * $PROJECT_DIR/scripts/health-check-cron.sh >> $PROJECT_DIR/logs/health.log 2>&1
+
 # BIAZ Finance - RSS Feed Monitoring (every 30 minutes)
 */30 * * * * $PROJECT_DIR/scripts/monitor-cron.sh >> $PROJECT_DIR/logs/monitor.log 2>&1
 
@@ -33,10 +36,12 @@ crontab "$TEMP_CRON"
 rm "$TEMP_CRON" "$TEMP_CRON.bak" 2>/dev/null || true
 
 echo "✅ Cron jobs installed:"
+echo "   - Health check: every 5 minutes"
 echo "   - RSS monitoring: every 30 minutes"
 echo "   - Price updates: every 15 minutes (market hours only)"
 echo ""
 echo "Logs:"
+echo "   - Health: $PROJECT_DIR/logs/health.log"
 echo "   - Monitor: $PROJECT_DIR/logs/monitor.log"
 echo "   - Prices: $PROJECT_DIR/logs/prices.log"
 echo ""
