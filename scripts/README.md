@@ -136,33 +136,73 @@ Monitor Apify actors and usage.
 
 ## Automated Monitoring
 
+### setup-cron.sh
+
+Install all cron jobs for automated monitoring.
+
+```bash
+./scripts/setup-cron.sh
+```
+
+**What it does:**
+1. Creates logs directory
+2. Installs RSS feed monitoring (every 30 minutes)
+3. Installs stock price updates (every 15 minutes during market hours)
+4. Shows installed jobs and log locations
+
+**Cron jobs installed:**
+- RSS monitoring: `*/30 * * * *` → `logs/monitor.log`
+- Price updates: `*/15 * * * *` → `logs/prices.log`
+
+**View logs:**
+```bash
+tail -f logs/monitor.log
+tail -f logs/prices.log
+```
+
+---
+
 ### monitor-cron.sh
 
 Cron job script for automated news feed monitoring.
 
-**Setup:**
-```bash
-# On server, add to crontab:
-crontab -e
-
-# Add this line (adjust path):
-*/30 * * * * /root/BIAZ-Finance/scripts/monitor-cron.sh >> /root/BIAZ-Finance/monitor.log 2>&1
-
-# Check logs:
-tail -f /root/BIAZ-Finance/monitor.log
-```
+**Runs:** Every 30 minutes (installed by `setup-cron.sh`)
 
 **What it does:**
-1. Runs every 30 minutes (or as configured)
-2. Triggers `POST /v1/admin/monitor-feeds`
-3. Scrapes RSS feeds and Google News
-4. Ingests new articles
-5. Logs results
+1. Triggers `POST /v1/admin/monitor-feeds`
+2. Scrapes RSS feeds and Google News
+3. Ingests new articles
+4. Logs results to `logs/monitor.log`
 
 **Manual trigger:**
 ```bash
 ./scripts/monitor-cron.sh
 ```
+
+---
+
+### update-prices-cron.sh
+
+Cron job script for stock price updates.
+
+**Runs:** Every 15 minutes during market hours (9:30 AM - 4:00 PM ET, Mon-Fri)
+
+**What it does:**
+1. Checks if market is open
+2. Skips weekends and outside market hours
+3. Triggers `POST /v1/admin/update-prices`
+4. Updates all stock prices from Yahoo Finance
+5. Logs results to `logs/prices.log`
+
+**Manual trigger:**
+```bash
+./scripts/update-prices-cron.sh
+```
+
+**Market hours logic:**
+- Monday-Friday only
+- 9:30 AM - 4:00 PM Eastern Time
+- Automatically skips holidays (no trading = no price changes)
 
 ---
 
