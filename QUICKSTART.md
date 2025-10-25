@@ -129,7 +129,7 @@ See `APIDOCS.md` for full documentation.
 - **art_003** - Apple EU antitrust (AAPL, truthScore: 0.85, negative)
 
 3 sources: Financial Times, TechCrunch, Reuters  
-2 stocks: AAPL, TSLA  
+2 stocks: AAPL ($178.45, +2.34%), TSLA ($242.18, -1.12%)  
 3 forecasts with AI reasoning
 
 All images use `https://picsum.photos/seed/{name}/800/600`

@@ -167,6 +167,8 @@ Search and list stocks referenced in articles.
       "name": "Apple Inc.",
       "exchange": "NASDAQ",
       "sector": "Technology",
+      "currentPrice": 178.45,
+      "change": "+2.34%",
       "articleCount": 2
     }
   ]
