@@ -1,27 +1,37 @@
-import { getAzureClient } from './azure-client';
+import { AzureOpenAI } from 'openai';
+
+let dalleClient: AzureOpenAI | null = null;
+
+function getDalleClient(): AzureOpenAI | null {
+  if (!process.env.DALLE_API_KEY || !process.env.DALLE_ENDPOINT) {
+    return null;
+  }
+  
+  if (!dalleClient) {
+    dalleClient = new AzureOpenAI({
+      apiKey: process.env.DALLE_API_KEY,
+      endpoint: process.env.DALLE_ENDPOINT,
+      apiVersion: process.env.DALLE_API_VERSION || '2024-02-01',
+    });
+  }
+  
+  return dalleClient;
+}
 
 export async function generateImage(title: string, symbol: string): Promise<string | null> {
-  // Image generation disabled until Azure DALL-E deployment is created
-  // To enable:
-  // 1. Create DALL-E 3 deployment in Azure OpenAI Studio
-  // 2. Update model name below to match deployment name
-  // 3. Uncomment the code below
-  
-  console.warn(`[${new Date().toISOString()}] Image generation disabled (no deployment configured)`);
-  return null;
-  
-  /* UNCOMMENT WHEN DEPLOYMENT IS READY:
   const prompt = `Professional financial news illustration for ${symbol} stock: ${title}. Modern, clean, business-focused style.`;
 
   try {
-    const client = getAzureClient();
+    const client = getDalleClient();
     if (!client) {
-      console.warn(`[${new Date().toISOString()}] Azure client not configured`);
+      console.warn(`[${new Date().toISOString()}] DALL-E client not configured`);
       return null;
     }
 
+    const deploymentName = process.env.DALLE_DEPLOYMENT_NAME || 'dall-e-3';
+    
     const response = await client.images.generate({
-      model: 'dall-e-3', // Replace with your deployment name
+      model: deploymentName,
       prompt,
       n: 1,
       size: '1024x1024',
@@ -37,5 +47,4 @@ export async function generateImage(title: string, symbol: string): Promise<stri
     console.warn(`[${new Date().toISOString()}] Image generation failed: ${error.message}`);
     return null;
   }
-  */
 }
