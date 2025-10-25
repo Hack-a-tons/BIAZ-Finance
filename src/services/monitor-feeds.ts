@@ -88,10 +88,12 @@ export async function monitorRSSFeeds(): Promise<void> {
           } else {
             // Track rejection reasons
             const reasons = results.map(r => r.status === 'rejected' ? r.reason?.message : '').filter(Boolean);
-            if (reasons.some(r => r.includes('no stock symbols'))) rejectedNoStocks++;
-            else if (reasons.some(r => r.includes('no valid') || r.includes('no unique'))) rejectedNoImage++;
-            else if (reasons.some(r => r.includes('duplicate'))) rejectedDuplicate++;
-            else if (reasons.some(r => r.includes('advertisement'))) rejectedAd++;
+            const reasonText = reasons.join(' ').toLowerCase();
+            
+            if (reasonText.includes('stock symbol')) rejectedNoStocks++;
+            else if (reasonText.includes('image')) rejectedNoImage++;
+            else if (reasonText.includes('duplicate')) rejectedDuplicate++;
+            else if (reasonText.includes('advertisement')) rejectedAd++;
             else {
               failed++;
               console.warn(`[${new Date().toISOString()}] Other #${failed}: ${reasons[0] || "unknown"}`);
@@ -164,10 +166,12 @@ export async function monitorGoogleNews(): Promise<void> {
           } else {
             // Track rejection reasons
             const reasons = results.map(r => r.status === 'rejected' ? r.reason?.message : '').filter(Boolean);
-            if (reasons.some(r => r.includes('no stock symbols'))) rejectedNoStocks++;
-            else if (reasons.some(r => r.includes('no valid') || r.includes('no unique'))) rejectedNoImage++;
-            else if (reasons.some(r => r.includes('duplicate'))) rejectedDuplicate++;
-            else if (reasons.some(r => r.includes('advertisement'))) rejectedAd++;
+            const reasonText = reasons.join(' ').toLowerCase();
+            
+            if (reasonText.includes('stock symbol')) rejectedNoStocks++;
+            else if (reasonText.includes('image')) rejectedNoImage++;
+            else if (reasonText.includes('duplicate')) rejectedDuplicate++;
+            else if (reasonText.includes('advertisement')) rejectedAd++;
             else {
               failed++;
               console.warn(`[${new Date().toISOString()}] Other #${failed}: ${reasons[0] || "unknown"}`);
