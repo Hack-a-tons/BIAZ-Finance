@@ -23,6 +23,11 @@ const RSS_FEEDS = [
   'https://www.ft.com/technology?format=rss',
   'https://techcrunch.com/feed/',
   'https://www.reuters.com/technology/rss',
+  'https://www.cnbc.com/id/100003114/device/rss/rss.html',  // CNBC Tech
+  'https://www.cnbc.com/id/10000664/device/rss/rss.html',   // CNBC Earnings
+  'https://www.marketwatch.com/rss/topstories',
+  'https://finance.yahoo.com/news/rssindex',
+  'https://seekingalpha.com/feed.xml',
 ];
 
 const GOOGLE_NEWS_QUERIES = [
@@ -30,6 +35,12 @@ const GOOGLE_NEWS_QUERIES = [
   'Tesla stock', 
   'NVIDIA earnings',
   'tech stocks',
+  'Microsoft earnings',
+  'Amazon stock',
+  'Meta stock',
+  'Google stock',
+  'semiconductor stocks',
+  'AI stocks',
 ];
 
 export async function monitorRSSFeeds(): Promise<void> {

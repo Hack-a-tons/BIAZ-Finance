@@ -285,9 +285,14 @@ export async function ingestArticle(url: string, manualSymbol?: string, rssItem?
 
 async function validateImageUrl(url: string): Promise<boolean> {
   try {
-    const response = await fetch(url, { method: 'HEAD', signal: AbortSignal.timeout(5000) });
+    const response = await fetch(url, { method: 'HEAD', signal: AbortSignal.timeout(10000) });
     const contentType = response.headers.get('content-type');
-    return response.ok && (contentType?.startsWith('image/') ?? false);
+    // Accept images, octet-stream (some CDNs), or missing content-type
+    return response.ok && (
+      contentType?.startsWith('image/') || 
+      contentType?.includes('octet-stream') || 
+      !contentType
+    );
   } catch {
     return false;
   }
