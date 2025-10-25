@@ -186,8 +186,8 @@ export async function ingestArticle(url: string, manualSymbol?: string, rssItem?
     }
     
     // Ensure title and summary are different
-    if (fetched.title === fetched.summary || fetched.summary.startsWith(fetched.title)) {
-      // Generate new summary from first sentence of article
+    if (!fetched.summary || fetched.summary.trim() === '' || fetched.title === fetched.summary || fetched.summary.startsWith(fetched.title)) {
+      // Generate new summary from first sentences of article
       const sentences = fetched.fullText.split(/[.!?]+/).filter(s => s.trim().length > 20);
       fetched.summary = sentences.slice(0, 2).join('. ').trim() + '.';
     }
