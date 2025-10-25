@@ -48,6 +48,10 @@ done
 
 [ -z "$ACTION" ] && ACTION="tables"
 
+# Show current date/time
+echo "Database snapshot: $(date)"
+echo ""
+
 run_psql() {
   ssh biaz.hurated.com "docker exec biaz-finance-postgres-1 psql -U biaz -d biaz_finance -c \"$1\""
 }
