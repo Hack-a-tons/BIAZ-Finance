@@ -102,7 +102,7 @@ async function extractImageFromUrl(url: string): Promise<string | null> {
     
     return null;
   } catch (error) {
-    console.error('Image extraction error:', error);
+    // Silent - image extraction failures are expected and handled
     return null;
   }
 }

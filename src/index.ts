@@ -56,9 +56,9 @@ app.use((req, res, next) => {
 // Test database connection
 pool.query('SELECT NOW()', (err, res) => {
   if (err) {
-    console.error('Database connection error:', err);
+    console.warn(`[${new Date().toISOString()}] Database connection failed: ${err.message}`);
   } else {
-    console.log('Database connected:', res.rows[0].now);
+    console.log(`[${new Date().toISOString()}] Database connected`);
   }
 });
 
@@ -198,7 +198,7 @@ app.get('/v1/articles', async (req, res) => {
     
     res.json(response);
   } catch (error: any) {
-    console.error('GET /articles error:', error);
+    console.warn(`[${new Date().toISOString()}] GET /articles failed: ${error.message}`);
     res.status(500).json({ error: error.message });
   }
 });
@@ -284,7 +284,7 @@ app.get('/v1/articles/:id', async (req, res) => {
       } : null
     });
   } catch (error: any) {
-    console.error('GET /articles/:id error:', error);
+    console.warn(`[${new Date().toISOString()}] GET /articles/:id failed: ${error.message}`);
     res.status(500).json({ error: error.message });
   }
 });
@@ -298,7 +298,7 @@ app.post('/v1/articles/ingest', expensiveLimiter, async (req, res) => {
     const article = await ingestArticle(url, symbol);
     res.status(201).json(article);
   } catch (error: any) {
-    console.error('Ingest error:', error);
+    console.warn(`[${new Date().toISOString()}] Ingest failed: ${error.message}`);
     res.status(500).json({ error: error.message || 'Failed to ingest article' });
   }
 });
@@ -387,7 +387,7 @@ app.post('/v1/articles/:id/score', expensiveLimiter, async (req, res) => {
       scoredAt: updatedResult.rows[0].updated_at
     });
   } catch (error: any) {
-    console.error('POST /articles/:id/score error:', error);
+    console.warn(`[${new Date().toISOString()}] POST /articles/:id/score failed: ${error.message}`);
     res.status(500).json({ error: error.message });
   }
 });
@@ -410,7 +410,7 @@ app.get('/v1/sources', async (req, res) => {
       }))
     });
   } catch (error: any) {
-    console.error('GET /sources error:', error);
+    console.warn(`[${new Date().toISOString()}] GET /sources failed: ${error.message}`);
     res.status(500).json({ error: error.message });
   }
 });
@@ -437,7 +437,7 @@ app.get('/v1/sources/:id', async (req, res) => {
       verifiedPublisher: row.verified_publisher
     });
   } catch (error: any) {
-    console.error('GET /sources/:id error:', error);
+    console.warn(`[${new Date().toISOString()}] GET /sources/:id failed: ${error.message}`);
     res.status(500).json({ error: error.message });
   }
 });
@@ -467,7 +467,7 @@ app.post('/v1/sources', async (req, res) => {
       verifiedPublisher: false
     });
   } catch (error: any) {
-    console.error('POST /sources error:', error);
+    console.warn(`[${new Date().toISOString()}] POST /sources failed: ${error.message}`);
     if (error.code === '23505') { // Unique violation
       res.status(409).json({ error: 'Domain already exists' });
     } else {
@@ -491,7 +491,7 @@ app.delete('/v1/sources/:id', async (req, res) => {
     
     res.status(204).send();
   } catch (error: any) {
-    console.error('DELETE /sources/:id error:', error);
+    console.warn(`[${new Date().toISOString()}] DELETE /sources/:id failed: ${error.message}`);
     res.status(500).json({ error: error.message });
   }
 });
@@ -533,7 +533,7 @@ app.get('/v1/stocks', async (req, res) => {
     
     res.json({ data: stocksWithCounts });
   } catch (error: any) {
-    console.error('Stocks error:', error);
+    console.warn(`[${new Date().toISOString()}] Stocks failed: ${error.message}`);
     res.status(500).json({ error: error.message });
   }
 });
@@ -568,7 +568,7 @@ app.get('/v1/forecasts/:id', async (req, res) => {
       generatedAt: row.generated_at
     });
   } catch (error: any) {
-    console.error('GET /forecasts/:id error:', error);
+    console.warn(`[${new Date().toISOString()}] GET /forecasts/:id failed: ${error.message}`);
     res.status(500).json({ error: error.message });
   }
 });
@@ -640,7 +640,7 @@ app.post('/v1/forecasts', expensiveLimiter, async (req, res) => {
       generatedAt: new Date().toISOString()
     });
   } catch (error: any) {
-    console.error('POST /forecasts error:', error);
+    console.warn(`[${new Date().toISOString()}] POST /forecasts failed: ${error.message}`);
     res.status(500).json({ error: error.message });
   }
 });
@@ -651,11 +651,13 @@ app.post('/v1/admin/monitor-feeds', async (req, res) => {
     const { runFeedMonitoring } = await import('./services/monitor-feeds');
     
     // Run in background
-    runFeedMonitoring().catch(console.error);
+    runFeedMonitoring().catch(err => 
+      console.warn(`[${new Date().toISOString()}] Feed monitoring failed: ${err.message}`)
+    );
     
     res.json({ message: 'Feed monitoring started in background' });
   } catch (error: any) {
-    console.error('Monitor feeds error:', error);
+    console.warn(`[${new Date().toISOString()}] Monitor feeds failed: ${error.message}`);
     res.status(500).json({ error: error.message });
   }
 });
@@ -668,11 +670,13 @@ app.post('/v1/admin/update-prices', async (req, res) => {
     const symbols = await getStocksNeedingUpdate();
     
     // Run in background
-    updateStockPrices(symbols).catch(console.error);
+    updateStockPrices(symbols).catch(err => 
+      console.warn(`[${new Date().toISOString()}] Price update failed: ${err.message}`)
+    );
     
     res.json({ message: `Updating prices for ${symbols.length} stocks`, symbols });
   } catch (error: any) {
-    console.error('Update prices error:', error);
+    console.warn(`[${new Date().toISOString()}] Update prices failed: ${error.message}`);
     res.status(500).json({ error: error.message });
   }
 });

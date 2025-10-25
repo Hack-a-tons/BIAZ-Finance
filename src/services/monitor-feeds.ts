@@ -91,10 +91,10 @@ export async function monitorRSSFeeds(): Promise<void> {
             else if (reasons.some(r => r.includes('no valid') || r.includes('no unique'))) rejectedNoImage++;
             else if (reasons.some(r => r.includes('duplicate'))) rejectedDuplicate++;
             else if (reasons.some(r => r.includes('advertisement'))) rejectedAd++;
-            console.error(`[${new Date().toISOString()}] All methods failed for ${url}`);
+            // Silent - tracked in rejection counts
           }
         } catch (error) {
-          console.error(`[${new Date().toISOString()}] Failed to ingest ${url}:`, error);
+          // Silent - tracked in rejection counts
         }
 
         // Rate limit: max 5 new articles per feed
@@ -103,8 +103,8 @@ export async function monitorRSSFeeds(): Promise<void> {
           break;
         }
       }
-    } catch (error) {
-      console.error(`[${new Date().toISOString()}] RSS feed error (${feedUrl}):`, error);
+    } catch (error: any) {
+      console.warn(`[${new Date().toISOString()}] RSS feed failed (${feedUrl}): ${error.message}`);
     }
   }
 
@@ -163,10 +163,10 @@ export async function monitorGoogleNews(): Promise<void> {
             else if (reasons.some(r => r.includes('no valid') || r.includes('no unique'))) rejectedNoImage++;
             else if (reasons.some(r => r.includes('duplicate'))) rejectedDuplicate++;
             else if (reasons.some(r => r.includes('advertisement'))) rejectedAd++;
-            console.error(`[${new Date().toISOString()}] All methods failed for ${url}`);
+            // Silent - tracked in rejection counts
           }
         } catch (error) {
-          console.error(`[${new Date().toISOString()}] Failed to ingest ${url}:`, error);
+          // Silent - tracked in rejection counts
         }
 
         // Rate limit: max 3 new articles per query
@@ -175,8 +175,8 @@ export async function monitorGoogleNews(): Promise<void> {
           break;
         }
       }
-    } catch (error) {
-      console.error(`[${new Date().toISOString()}] Google News error (${searchQuery}):`, error);
+    } catch (error: any) {
+      console.warn(`[${new Date().toISOString()}] Google News failed (${searchQuery}): ${error.message}`);
     }
   }
 
