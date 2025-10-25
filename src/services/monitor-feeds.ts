@@ -4,7 +4,7 @@ import { ingestArticle } from './ingest-article';
 import { query } from '../db';
 
 const parser = new Parser();
-const ts = () => `[${new Date().toISOString()}]`;
+const log = (msg: string) => console.log(`[${new Date().toISOString()}] ${msg}`);
 
 // Follow redirects to get actual URL
 async function resolveUrl(url: string): Promise<string> {
@@ -33,7 +33,7 @@ const GOOGLE_NEWS_QUERIES = [
 ];
 
 export async function monitorRSSFeeds(): Promise<void> {
-  console.log(`${ts()} Starting RSS feed monitoring...');
+  log('Starting RSS feed monitoring...');
   
   let totalFound = 0;
   let ingested = 0;
@@ -42,7 +42,7 @@ export async function monitorRSSFeeds(): Promise<void> {
 
   for (const feedUrl of RSS_FEEDS) {
     try {
-      console.log(`${ts()} Fetching RSS: ${feedUrl}`);
+      log(`Fetching RSS: ${feedUrl}`);
       const feed = await parser.parseURL(feedUrl);
       
       for (const item of feed.items.slice(0, 20)) {
@@ -68,7 +68,7 @@ export async function monitorRSSFeeds(): Promise<void> {
           continue;
         }
 
-        console.log(`${ts()} Ingesting: ${item.title}`);
+        log(`Ingesting: ${item.title}`);
         try {
           // Try all 3 methods in parallel, use first successful result
           const results = await Promise.allSettled([
@@ -81,28 +81,28 @@ export async function monitorRSSFeeds(): Promise<void> {
           if (success) {
             ingested++;
           } else {
-            console.error(`${ts()} All methods failed for ${url}`);
+            console.error(`[${new Date().toISOString()}] All methods failed for ${url}`);
           }
         } catch (error) {
-          console.error(`${ts()} Failed to ingest ${url}:`, error);
+          console.error(`[${new Date().toISOString()}] Failed to ingest ${url}:`, error);
         }
 
         // Rate limit: max 5 new articles per feed
         if (ingested >= 5) {
-          console.log(`${ts()} Reached ingestion limit for this feed');
+          log('Reached ingestion limit for this feed');
           break;
         }
       }
     } catch (error) {
-      console.error(`${ts()} RSS feed error (${feedUrl}):`, error);
+      console.error(`[${new Date().toISOString()}] RSS feed error (${feedUrl}):`, error);
     }
   }
 
-  console.log(`${ts()} RSS monitoring complete: ${totalFound} found, ${ingested} ingested, ${cached} cached, ${skipped} skipped`);
+  log(`RSS monitoring complete: ${totalFound} found, ${ingested} ingested, ${cached} cached, ${skipped} skipped`);
 }
 
 export async function monitorGoogleNews(): Promise<void> {
-  console.log(`${ts()} Starting Google News monitoring...');
+  log('Starting Google News monitoring...');
   
   let totalFound = 0;
   let ingested = 0;
@@ -111,7 +111,7 @@ export async function monitorGoogleNews(): Promise<void> {
   for (const searchQuery of GOOGLE_NEWS_QUERIES) {
     try {
       const googleNewsUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(searchQuery)}&hl=en-US&gl=US&ceid=US:en`;
-      console.log(`${ts()} Fetching Google News: ${searchQuery}`);
+      log(`Fetching Google News: ${searchQuery}`);
       
       const feed = await parser.parseURL(googleNewsUrl);
       
@@ -130,7 +130,7 @@ export async function monitorGoogleNews(): Promise<void> {
           continue;
         }
 
-        console.log(`${ts()} Ingesting: ${item.title}`);
+        log(`Ingesting: ${item.title}`);
         try {
           // Try all 3 methods in parallel, use first successful result
           const results = await Promise.allSettled([
@@ -143,31 +143,31 @@ export async function monitorGoogleNews(): Promise<void> {
           if (success) {
             ingested++;
           } else {
-            console.error(`${ts()} All methods failed for ${url}`);
+            console.error(`[${new Date().toISOString()}] All methods failed for ${url}`);
           }
         } catch (error) {
-          console.error(`${ts()} Failed to ingest ${url}:`, error);
+          console.error(`[${new Date().toISOString()}] Failed to ingest ${url}:`, error);
         }
 
         // Rate limit: max 3 new articles per query
         if (ingested >= 3) {
-          console.log(`${ts()} Reached ingestion limit for this query');
+          log('Reached ingestion limit for this query');
           break;
         }
       }
     } catch (error) {
-      console.error(`${ts()} Google News error (${searchQuery}):`, error);
+      console.error(`[${new Date().toISOString()}] Google News error (${searchQuery}):`, error);
     }
   }
 
-  console.log(`${ts()} Google News monitoring complete: ${totalFound} found, ${ingested} ingested, ${cached} cached`);
+  log(`Google News monitoring complete: ${totalFound} found, ${ingested} ingested, ${cached} cached`);
 }
 
 export async function runFeedMonitoring(): Promise<void> {
-  console.log(`${ts()} === Starting Feed Monitoring ===');
+  log('=== Starting Feed Monitoring ===');
   
   await monitorRSSFeeds();
   await monitorGoogleNews();
   
-  console.log(`${ts()} === Feed Monitoring Complete ===');
+  log('=== Feed Monitoring Complete ===');
 }
