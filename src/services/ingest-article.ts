@@ -98,6 +98,9 @@ export async function ingestArticle(url: string, manualSymbol?: string): Promise
     // 8. Store in database
     const articleId = `art_${Date.now()}`;
     
+    // Generate stock-based image if no real image found
+    const imageUrl = fetched.imageUrl || generateStockImage(symbols[0]);
+    
     await query(
       `INSERT INTO articles (id, title, summary, url, image_url, published_at, source_id, truth_score, impact_sentiment, explanation)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
@@ -106,7 +109,7 @@ export async function ingestArticle(url: string, manualSymbol?: string): Promise
         fetched.title,
         fetched.summary,
         url,
-        fetched.imageUrl,
+        imageUrl,
         fetched.publishedAt,
         sourceId,
         truthScore,
@@ -178,7 +181,7 @@ export async function ingestArticle(url: string, manualSymbol?: string): Promise
       title: fetched.title,
       summary: fetched.summary,
       url,
-      imageUrl: fetched.imageUrl,
+      imageUrl,
       publishedAt: fetched.publishedAt,
       source: sourceId,
       symbols,
@@ -198,6 +201,12 @@ export async function ingestArticle(url: string, manualSymbol?: string): Promise
     console.error('Ingestion error:', error);
     throw error;
   }
+}
+
+function generateStockImage(symbol: string): string {
+  // Use a finance-themed image service with stock symbol
+  // Unsplash Source provides consistent, high-quality stock photos
+  return `https://source.unsplash.com/800x600/?${symbol},stock,finance,business`;
 }
 
 function determineImpactSentiment(claims: any[], text: string): string {

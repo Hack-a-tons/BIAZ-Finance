@@ -12,7 +12,7 @@ export interface FetchedArticle {
   fullText: string;
   publishedAt: string;
   sourceDomain: string;
-  imageUrl: string; // Now required
+  imageUrl?: string; // Now optional again for fallback
 }
 
 export async function fetchArticle(url: string): Promise<FetchedArticle> {
@@ -48,9 +48,7 @@ export async function fetchArticle(url: string): Promise<FetchedArticle> {
       if (extracted) imageUrl = extracted;
     }
     
-    if (!imageUrl) {
-      throw new Error('No image found for article');
-    }
+    // Image is optional - will use stock-based illustration if not found
 
     return {
       title,
