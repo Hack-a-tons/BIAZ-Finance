@@ -8,6 +8,9 @@ services:
       - API_URL=${API_URL}
       - NODE_ENV=${NODE_ENV}
       - DATABASE_URL=${DATABASE_URL}
+      - POSTGRES_USER=biaz
+      - POSTGRES_PASSWORD=biaz_password
+      - POSTGRES_DB=biaz_finance
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
       - GEMINI_MODEL=${GEMINI_MODEL}
       - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}

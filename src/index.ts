@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import mockData from '../mock-data.json';
+import pool from './db';
 
 dotenv.config();
 
@@ -10,6 +11,15 @@ const PORT = process.env.API_PORT || 23000;
 
 app.use(cors());
 app.use(express.json());
+
+// Test database connection
+pool.query('SELECT NOW()', (err, res) => {
+  if (err) {
+    console.error('Database connection error:', err);
+  } else {
+    console.log('Database connected:', res.rows[0].now);
+  }
+});
 
 // Articles endpoints
 app.get('/v1/articles', (req, res) => {
