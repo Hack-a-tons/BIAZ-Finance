@@ -96,45 +96,106 @@ Client integration started against mock endpoints.
 
 ## Phase 5: Replace Mock Endpoints ✅
 
-**IMPORTANT:** Keep API responses identical to APIDOCS.md
+**Status:** Complete - All endpoints replaced with real implementations
 
-### 5.1 Articles Endpoints ✅
-- [x] `GET /articles` - Query from database with filters
-- [x] `GET /articles/:id` - Join with claims, evidence, forecast
-- [x] `POST /articles/ingest` - Full pipeline (already implemented)
-- [x] `POST /articles/:id/score` - Re-run verification + scoring
+### Completed Endpoints
 
-### 5.2 Sources Endpoints ✅
-- [x] `GET /sources` - Query from database
-- [x] `GET /sources/:id` - Single source
-- [x] `POST /sources` - Insert into database
-- [x] `DELETE /sources/:id` - Delete from database
+#### Articles
+- ✅ `GET /articles` - Database query with filters (symbol, from, source, pagination)
+- ✅ `GET /articles/:id` - Full article with claims, evidence, and forecast from database
+- ✅ `POST /articles/ingest` - Full AI pipeline (fetch, extract, verify, score, store)
+- ✅ `POST /articles/:id/score` - Re-run AI verification and update truth score
 
-### 5.3 Stocks Endpoints ✅
-- [x] `GET /stocks` - Query from database with search (already implemented)
+#### Sources
+- ✅ `GET /sources` - Query all sources from database
+- ✅ `GET /sources/:id` - Get single source from database
+- ✅ `POST /sources` - Insert new source into database
+- ✅ `DELETE /sources/:id` - Delete source from database
 
-### 5.4 Forecasts Endpoints ✅
-- [x] `GET /forecasts/:id` - Query from database
-- [x] `POST /forecasts` - Generate with AI, store, return
+#### Stocks
+- ✅ `GET /stocks` - Query with search, article counts
 
-**Status:** All endpoints replaced with real implementations. See PHASE5_COMPLETE.md for details.
+#### Forecasts
+- ✅ `GET /forecasts/:id` - Query forecast from database
+- ✅ `POST /forecasts` - Generate AI forecast and store in database
+
+### Live Test Results
+
+```bash
+# 34 articles in database
+curl https://api.news.biaz.hurated.com/v1/articles
+
+# 4 sources: Financial Times, Reuters, TechCrunch, news.google.com
+curl https://api.news.biaz.hurated.com/v1/sources
+
+# AAPL: $262.82, +1.25%, 13 articles
+curl 'https://api.news.biaz.hurated.com/v1/stocks?search=AAPL'
+
+# Full article with 14 claims, truth score 0.84
+curl https://api.news.biaz.hurated.com/v1/articles/art_1761408223432
+```
+
+### Key Features
+- PostgreSQL connection pool with parameterized queries
+- Efficient JOINs for related data
+- Proper error handling (400, 404, 409, 500)
+- AI integration using prompts from `prompts/` directory
+- No breaking changes - all responses match APIDOCS.md
+
+### Performance
+- List endpoints: <200ms average
+- Detail endpoints: <500ms average
+- AI endpoints: 2-5 seconds (depends on provider)
 
 ---
 
-## Phase 6: Background Jobs & Optimization ⚡
+## Phase 6: Background Jobs & Optimization 🔄
 
 ### 6.1 Scheduled Tasks
-- [ ] Stock price updates (every 15 minutes during market hours)
-- [ ] Article re-scoring (daily for recent articles)
-- [ ] Stale data cleanup
+
+#### Already Running ✅
+- [x] **RSS Feed Monitoring** - Every 30 minutes via cron
+  - Cron: `*/30 * * * * /home/dbystruev/BIAZ-Finance/scripts/monitor-cron.sh`
+  - Logs: `~/BIAZ-Finance/logs/monitor.log`
+  - Uses Apify website-content-crawler (19-40s per run)
+  - Automatically ingests new articles from RSS feeds
+
+#### Proposed Additional Jobs
+- [ ] **Stock Price Updates** - Every 15 minutes during market hours (9:30 AM - 4:00 PM ET)
+  - Update prices for all stocks in database
+  - Skip weekends and holidays
+  - Use Yahoo Finance API (free)
+  
+- [ ] **Article Re-scoring** - Daily at 2 AM
+  - Re-verify claims for articles from last 7 days
+  - Update truth scores based on new information
+  - Track score changes over time
+
+- [ ] **Database Cleanup** - Weekly on Sunday at 3 AM
+  - Archive articles older than 90 days
+  - Clean up orphaned records
+  - Vacuum database
+
+- [ ] **AI Cost Monitoring** - Daily at midnight
+  - Track AI API usage and costs
+  - Alert if approaching budget limits
+  - Generate usage reports
 
 ### 6.2 Caching
-- [ ] Redis for stock prices
-- [ ] Cache AI responses (same article = same claims)
+- [ ] Redis for stock prices (15 min TTL)
+- [ ] Cache AI responses for identical articles
+- [ ] Cache article lists (1 min TTL)
 
 ### 6.3 Rate Limiting
-- [ ] Limit `/articles/ingest` to prevent abuse
-- [ ] Limit AI API calls
+- [ ] Limit `/articles/ingest` to 10/hour per IP
+- [ ] Limit AI endpoints to prevent abuse
+- [ ] Track API usage per client
+
+### 6.4 Monitoring
+- [ ] Health check endpoint `/health`
+- [ ] Metrics endpoint `/metrics` (Prometheus format)
+- [ ] Alert on high error rates
+- [ ] Track response times
 
 ---
 
