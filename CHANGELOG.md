@@ -1,5 +1,33 @@
 # Changelog
 
+## 2025-10-25 - AI-Generated Forecast Summary ✅
+
+### Implementation
+- ✅ Added `forecast_summary` column to articles table
+- ✅ Generate AI-powered forecast summary during article ingestion
+- ✅ Separate from article summary - focuses on market impact and investor implications
+- ✅ Cached for 6 hours to reduce AI costs
+- ✅ Added to all article API responses (`forecastSummary` field)
+
+### Example
+**Article Summary** (from source):
+```
+Nvidia's upcoming earnings report should contain valuable information related to the company's new Blackwell and Blackwell Ultra GPUs...
+```
+
+**Forecast Summary** (AI-generated):
+```
+Nvidia's strong Blackwell GPU demand and continued AI infrastructure spending by big tech could drive significant upside, with analysts expecting earnings to beat estimates and potentially push the stock to new highs post-earnings.
+```
+
+### Usage
+```bash
+# Get article with forecast summary
+curl https://api.news.biaz.hurated.com/v1/articles/:id | jq '.forecastSummary'
+```
+
+---
+
 ## 2025-10-25 - Quality Improvements
 
 ### Article Deduplication
@@ -30,8 +58,3 @@ Means:
 - 5 new articles added to database
 - 15 articles already existed (by URL)
 - 0 rejected for various reasons
-
-### TODO: Impact Forecast Summary
-- [ ] Generate custom forecast summary instead of using article summary
-- [ ] Add forecast generation to article ingestion pipeline
-- [ ] Store forecast in database and link to article
