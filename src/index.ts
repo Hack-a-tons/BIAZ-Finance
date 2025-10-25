@@ -145,6 +145,21 @@ app.post('/v1/forecasts', (req, res) => {
   res.status(201).json(newForecast);
 });
 
+// Feed monitoring endpoint (admin only - add auth later)
+app.post('/v1/admin/monitor-feeds', async (req, res) => {
+  try {
+    const { runFeedMonitoring } = await import('./services/monitor-feeds');
+    
+    // Run in background
+    runFeedMonitoring().catch(console.error);
+    
+    res.json({ message: 'Feed monitoring started in background' });
+  } catch (error: any) {
+    console.error('Monitor feeds error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`BIAZ Finance API running on port ${PORT}`);
 });
