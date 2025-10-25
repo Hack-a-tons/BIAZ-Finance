@@ -170,10 +170,13 @@ curl https://api.news.biaz.hurated.com/v1/articles/art_1761408223432
 **Setup:** Run `./scripts/setup-cron.sh` to install both jobs
 
 #### Proposed Additional Jobs
-- [ ] **Article Re-scoring** - Daily at 2 AM
-  - Re-verify claims for articles from last 7 days
-  - Update truth scores based on new information
-  - Track score changes over time
+- [x] **Article Re-scoring** - Daily at 2 AM
+  - Cron: `0 2 * * * ~/BIAZ-Finance/scripts/rescore-cron.sh`
+  - Logs: `~/BIAZ-Finance/logs/rescore.log`
+  - Re-verifies claims for articles from last 7 days
+  - Updates truth scores based on new information
+  - Rate limited: 2 seconds between articles
+  - Manual: `./scripts/rescore-articles.sh [days]`
 
 - [ ] **Database Cleanup** - Weekly on Sunday at 3 AM
   - Archive articles older than 90 days
