@@ -155,17 +155,21 @@ curl https://api.news.biaz.hurated.com/v1/articles/art_1761408223432
 
 #### Already Running ✅
 - [x] **RSS Feed Monitoring** - Every 30 minutes via cron
-  - Cron: `*/30 * * * * /home/dbystruev/BIAZ-Finance/scripts/monitor-cron.sh`
+  - Cron: `*/30 * * * * ~/BIAZ-Finance/scripts/monitor-cron.sh`
   - Logs: `~/BIAZ-Finance/logs/monitor.log`
   - Uses Apify website-content-crawler (19-40s per run)
   - Automatically ingests new articles from RSS feeds
 
+- [x] **Stock Price Updates** - Every 15 minutes during market hours
+  - Cron: `*/15 * * * * ~/BIAZ-Finance/scripts/update-prices-cron.sh`
+  - Logs: `~/BIAZ-Finance/logs/prices.log`
+  - Market hours: 9:30 AM - 4:00 PM ET, Monday-Friday
+  - Uses Yahoo Finance API (free)
+  - Automatically skips weekends and holidays
+
+**Setup:** Run `./scripts/setup-cron.sh` to install both jobs
+
 #### Proposed Additional Jobs
-- [ ] **Stock Price Updates** - Every 15 minutes during market hours (9:30 AM - 4:00 PM ET)
-  - Update prices for all stocks in database
-  - Skip weekends and holidays
-  - Use Yahoo Finance API (free)
-  
 - [ ] **Article Re-scoring** - Daily at 2 AM
   - Re-verify claims for articles from last 7 days
   - Update truth scores based on new information
