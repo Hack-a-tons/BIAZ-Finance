@@ -78,19 +78,19 @@ Client integration started against mock endpoints.
 
 ---
 
-## Phase 4: Real-Time Stock Data 📈
+## Phase 4: Real-Time Stock Data ✅
 
-### 4.1 Stock Price API
-- [ ] Research free stock API (Alpha Vantage, Finnhub, Yahoo Finance)
-- [ ] Add API key to `.env` and `.env.example`
-- [ ] Create `src/services/stock-prices.ts`
-- [ ] Fetch current price + daily change %
-- [ ] Cache prices (update every 5-15 minutes)
+### 4.1 Stock Price API ✅
+- [x] Research free stock API (Alpha Vantage, Finnhub, Yahoo Finance)
+- [x] Add API key to `.env` and `.env.example` (not needed - Yahoo Finance is free)
+- [x] Create `src/services/stock-prices.ts`
+- [x] Fetch current price + daily change %
+- [x] Cache prices (update every 5-15 minutes)
 
-### 4.2 Stock Info
-- [ ] Fetch company name, exchange, sector
-- [ ] Store in `stocks` table
-- [ ] Update on first reference or periodically
+### 4.2 Stock Info ✅
+- [x] Fetch company name, exchange, sector
+- [x] Store in `stocks` table
+- [x] Update on first reference or periodically
 
 ---
 
