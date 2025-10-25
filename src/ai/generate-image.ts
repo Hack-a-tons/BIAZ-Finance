@@ -32,7 +32,7 @@ export async function generateImage(title: string, symbol: string): Promise<stri
   await waitForRateLimit();
 
   try {
-    const prompt = `Professional financial news illustration for ${symbol} stock`;
+    const prompt = `Professional business photography for ${symbol} stock market news. High-quality corporate photo featuring modern office environment, financial technology, stock market displays, or business professionals. Photorealistic, sharp focus, professional lighting, corporate aesthetic.`;
     
     const response = await fetch(
       `${process.env.DALLE_ENDPOINT}/openai/deployments/${process.env.DALLE_DEPLOYMENT_NAME}/images/generations?api-version=${process.env.DALLE_API_VERSION || '2024-02-01'}`,
