@@ -69,8 +69,19 @@ export async function monitorRSSFeeds(): Promise<void> {
 
         console.log(`Ingesting: ${item.title}`);
         try {
-          await ingestArticle(url, undefined, item, 'rss');
-          ingested++;
+          // Try all 3 methods in parallel, use first successful result
+          const results = await Promise.allSettled([
+            ingestArticle(url, undefined, item, 'rss'),
+            ingestArticle(url, undefined, item, 'http'),
+            ingestArticle(url, undefined, item, 'apify')
+          ]);
+          
+          const success = results.find(r => r.status === 'fulfilled');
+          if (success) {
+            ingested++;
+          } else {
+            console.error(`All methods failed for ${url}`);
+          }
         } catch (error) {
           console.error(`Failed to ingest ${url}:`, error);
         }
@@ -120,8 +131,19 @@ export async function monitorGoogleNews(): Promise<void> {
 
         console.log(`Ingesting: ${item.title}`);
         try {
-          await ingestArticle(url, undefined, item, 'rss');
-          ingested++;
+          // Try all 3 methods in parallel, use first successful result
+          const results = await Promise.allSettled([
+            ingestArticle(url, undefined, item, 'rss'),
+            ingestArticle(url, undefined, item, 'http'),
+            ingestArticle(url, undefined, item, 'apify')
+          ]);
+          
+          const success = results.find(r => r.status === 'fulfilled');
+          if (success) {
+            ingested++;
+          } else {
+            console.error(`All methods failed for ${url}`);
+          }
         } catch (error) {
           console.error(`Failed to ingest ${url}:`, error);
         }

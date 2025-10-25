@@ -130,8 +130,21 @@ export async function ingestArticle(url: string, manualSymbol?: string, rssItem?
     // 8. Store in database
     const articleId = `art_${Date.now()}`;
     
-    // Generate stock-based image if no real image found
-    const imageUrl = fetched.imageUrl || generateStockImage(symbols[0]);
+    // Validate and set image URL
+    let imageUrl = null;
+    if (fetched.imageUrl && await validateImageUrl(fetched.imageUrl)) {
+      imageUrl = fetched.imageUrl;
+    } else if (symbols.length > 0) {
+      const fallbackUrl = generateStockImage(symbols[0]);
+      if (await validateImageUrl(fallbackUrl)) {
+        imageUrl = fallbackUrl;
+      }
+    }
+    
+    // Reject articles without valid images
+    if (!imageUrl) {
+      throw new Error('No valid image URL found for article');
+    }
     
     await query(
       `INSERT INTO articles (id, title, summary, url, image_url, published_at, source_id, truth_score, impact_sentiment, explanation)
@@ -235,10 +248,20 @@ export async function ingestArticle(url: string, manualSymbol?: string, rssItem?
   }
 }
 
+async function validateImageUrl(url: string): Promise<boolean> {
+  try {
+    const response = await fetch(url, { method: 'HEAD', signal: AbortSignal.timeout(5000) });
+    return response.ok && response.headers.get('content-type')?.startsWith('image/');
+  } catch {
+    return false;
+  }
+}
+
 function generateStockImage(symbol: string): string {
-  // Use a finance-themed image service with stock symbol
-  // Unsplash Source provides consistent, high-quality stock photos
-  return `https://source.unsplash.com/800x600/?${symbol},stock,finance,business`;
+  // Pexels provides free stock photos via their API
+  // Using their search URL format for finance-related images
+  const query = encodeURIComponent(`${symbol} stock market finance`);
+  return `https://images.pexels.com/photos/534216/pexels-photo-534216.jpeg?auto=compress&cs=tinysrgb&w=800&h=600`;
 }
 
 function determineImpactSentiment(claims: any[], text: string): string {
