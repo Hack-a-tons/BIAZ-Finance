@@ -1,18 +1,18 @@
-import { AzureOpenAI } from 'openai';
+import { OpenAIClient, AzureKeyCredential } from '@azure/openai';
 
-let dalleClient: AzureOpenAI | null = null;
+let dalleClient: OpenAIClient | null = null;
 
-function getDalleClient(): AzureOpenAI | null {
+function getDalleClient(): OpenAIClient | null {
   if (!process.env.DALLE_API_KEY || !process.env.DALLE_ENDPOINT) {
     return null;
   }
   
   if (!dalleClient) {
-    dalleClient = new AzureOpenAI({
-      apiKey: process.env.DALLE_API_KEY,
-      endpoint: process.env.DALLE_ENDPOINT,
-      apiVersion: process.env.DALLE_API_VERSION || '2024-02-01',
-    });
+    dalleClient = new OpenAIClient(
+      process.env.DALLE_ENDPOINT,
+      new AzureKeyCredential(process.env.DALLE_API_KEY),
+      { apiVersion: process.env.DALLE_API_VERSION || '2024-02-01' }
+    );
   }
   
   return dalleClient;
@@ -30,15 +30,9 @@ export async function generateImage(title: string, symbol: string): Promise<stri
 
     const deploymentName = process.env.DALLE_DEPLOYMENT_NAME || 'dall-e-3';
     
-    const response = await client.images.generate({
-      model: deploymentName,
-      prompt,
-      n: 1,
-      size: '1024x1024',
-      quality: 'standard'
-    });
-
-    const imageUrl = response.data?.[0]?.url || null;
+    const results = await client.getImages(deploymentName, prompt, { n: 1, size: '1024x1024' });
+    const imageUrl = results.data?.[0]?.url || null;
+    
     if (imageUrl) {
       console.log(`[${new Date().toISOString()}] Generated image with DALL-E 3`);
     }
