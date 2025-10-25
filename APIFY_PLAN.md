@@ -1,184 +1,154 @@
 # Apify Usage Plan for BIAZ Finance
 
-## Current Implementation ✅
+## Budget: $500+ ✅
 
-### What We Use Apify For:
+Won at previous hackathon - plenty for automated news monitoring!
 
-**1. Article Content Extraction** (Currently Implemented)
-- Actor: `apify/website-content-crawler`
-- Purpose: Fetch full article content from any URL
-- Triggered: When user calls `POST /v1/articles/ingest` with article URL
-- Cost: ~$0.01-0.05 per article (depending on complexity)
+---
 
-**How it works:**
+## Implementation Strategy
+
+### 1. On-Demand Analysis ✅ (Currently Implemented)
+- User provides article URL
+- Check if URL already in database → return cached result
+- If new → Apify fetch → AI analyze → Store → Return
+- Cost: ~$0.05 per new article
+
+### 2. Automated News Feed 🚀 (To Implement)
+- Background job runs every 15-30 minutes
+- Scrapes top financial news sources (RSS feeds, Google News)
+- Auto-ingests new articles
+- Pre-analyzes with AI (claims, truth score, forecast)
+- User sees pre-analyzed feed when scrolling
+
+**Sources to monitor:**
+- Google News (keywords: AAPL, TSLA, tech stocks, earnings)
+- RSS Feeds: Reuters, Financial Times, TechCrunch, Bloomberg
+- Company-specific: Apple Newsroom, Tesla Blog
+
+**Workflow:**
 ```
-User provides URL → Apify fetches content → Extract title, text, metadata → 
-AI extracts claims → AI verifies claims → Store in database
+Scheduled Job (every 15min) →
+  Apify scrapes news sources →
+  Filter: only financial/stock news →
+  Check: skip if URL already in DB →
+  For each new article:
+    Apify fetch content →
+    AI extract claims →
+    AI verify claims →
+    AI generate forecast →
+    Store in DB →
+  User scrolls feed → sees pre-analyzed articles
 ```
 
 ---
 
-## Future Expansion Options 🚀
+## Cost Estimates (Monthly)
 
-### Option 1: Automated News Discovery (Not Yet Implemented)
+### Automated Feed:
+- 4 runs/hour × 24 hours × 30 days = 2,880 runs/month
+- ~20 new articles per run = 57,600 articles/month
+- Realistic (after deduplication): ~5,000 new articles/month
+- Cost: 5,000 × $0.05 = **$250/month**
 
-**Use Case:** Automatically find new financial news articles
+### On-Demand:
+- User-submitted URLs: ~100/month
+- Cost: 100 × $0.05 = **$5/month**
 
-**Actors to Consider:**
-- `apify/google-news-scraper` - Search Google News for keywords
-- `apify/rss-feed-scraper` - Monitor RSS feeds from financial sites
-- Custom scheduled runs to check sources every hour
+### Total: ~$255/month
+**Budget lasts: ~2 months** (then need to optimize or add revenue)
 
-**Implementation:**
+---
+
+## Database Deduplication Strategy
+
+### Check Before Ingesting:
+```sql
+SELECT id FROM articles WHERE url = $1
+```
+
+If exists → return cached article
+If not → ingest new article
+
+### Benefits:
+- No duplicate analysis
+- Instant response for cached articles
+- Saves Apify + AI costs
+- Better user experience
+
+---
+
+## Actors to Use
+
+### 1. Google News Scraper
 ```javascript
-// Search for AAPL news
 await client.actor('apify/google-news-scraper').call({
-  searchQueries: ['Apple stock', 'AAPL earnings'],
-  maxArticles: 10,
+  searchQueries: ['Apple stock', 'Tesla earnings', 'tech stocks'],
+  maxArticles: 50,
+  language: 'en',
 });
+```
 
-// Monitor RSS feeds
+### 2. RSS Feed Scraper
+```javascript
 await client.actor('apify/rss-feed-scraper').call({
   feedUrls: [
-    'https://www.ft.com/rss/companies/apple',
+    'https://www.ft.com/rss/companies',
     'https://techcrunch.com/feed/',
+    'https://www.reuters.com/finance/rss',
   ],
+  maxItems: 100,
 });
 ```
 
-**Cost:** ~$5-20/month for hourly checks across multiple sources
-
-**Pros:**
-- Automatic article discovery
-- No manual URL submission needed
-- Real-time news monitoring
-
-**Cons:**
-- Higher Apify costs
-- Need to filter relevant articles
-- May ingest duplicate/low-quality content
-
----
-
-### Option 2: Fact-Checking Enhancement (Potential)
-
-**Use Case:** Verify claims by scraping official sources
-
-**Actors to Consider:**
-- `apify/web-scraper` - Scrape SEC filings, company IR pages
-- `apify/website-content-crawler` - Extract data from evidence URLs
-
-**Implementation:**
+### 3. Website Content Crawler (current)
 ```javascript
-// Verify claim: "Apple reported $89.5B revenue"
-// 1. AI identifies claim needs verification
-// 2. AI suggests evidence URL: https://investor.apple.com/...
-// 3. Apify scrapes that page
-// 4. AI compares scraped data with claim
+await client.actor('apify/website-content-crawler').call({
+  startUrls: [{ url: articleUrl }],
+  maxCrawlDepth: 0,
+  maxCrawlPages: 1,
+});
 ```
-
-**Cost:** ~$0.02-0.10 per claim verification
-
-**Pros:**
-- More accurate truth scores
-- Real evidence from official sources
-- Reduces AI hallucination
-
-**Cons:**
-- Significantly increases Apify usage
-- Slower ingestion (multiple scrapes per article)
-- Complex parsing of financial documents
 
 ---
 
-## Recommended Approach 💡
+## Implementation Priority
 
-### Phase 1 (Current): Manual URL Ingestion ✅
-- User provides article URLs
-- Apify fetches content on-demand
-- Cost: ~$0.05 per article
-- **Best for hackathon demo and initial testing**
+### Phase 1: Database Deduplication ✅
+- Add URL uniqueness check
+- Return cached articles instantly
+- **Implement now**
 
-### Phase 2 (Future): Hybrid Approach
-- Keep manual ingestion for important articles
-- Add scheduled RSS monitoring for top 5-10 sources
-- Use Apify for content extraction only (not fact-checking)
-- Let AI handle verification with its knowledge base
-- Cost: ~$10-30/month
+### Phase 2: RSS Feed Monitoring 🚀
+- Monitor 5-10 top financial RSS feeds
+- Run every 30 minutes
+- Auto-ingest new articles
+- **Implement next**
 
-### Phase 3 (Scale): Full Automation
-- Google News scraping for keyword monitoring
-- Apify-based fact verification for high-impact claims
-- Scheduled runs every 15-30 minutes
-- Cost: ~$50-100/month
+### Phase 3: Google News Integration
+- Search for stock-specific keywords
+- Run every 15 minutes
+- Filter relevant articles
+- **Implement after RSS working**
 
----
-
-## Current Budget: $29.58
-
-**Recommended allocation:**
-- Article ingestion: ~500 articles = $25
-- Testing/development: $4.58
-
-**This is enough for:**
-- Full hackathon demo (50-100 articles)
-- Initial production testing
-- Client integration validation
+### Phase 4: Optimization
+- Smart scheduling (more frequent during market hours)
+- Source quality scoring
+- Duplicate detection improvements
+- **Implement after user feedback**
 
 ---
 
-## Fact-Checking Strategy 🔍
-
-### Current Approach (AI-Only): ✅
-```
-Article → Extract claims → AI verifies using knowledge → Truth score
-```
-
-**Pros:**
-- Fast (no additional scraping)
-- Low cost (only AI API calls)
-- Works for most claims
-
-**Cons:**
-- AI knowledge cutoff date
-- Potential hallucination
-- No real-time data verification
-
-### Enhanced Approach (AI + Apify):
-```
-Article → Extract claims → AI suggests evidence URLs → 
-Apify scrapes evidence → AI compares → Truth score
-```
-
-**When to use:**
-- High-impact claims (earnings, acquisitions)
-- Recent events (after AI knowledge cutoff)
-- Regulatory filings (SEC, EU Commission)
-
-**Cost:** 2-5x more expensive per article
-
----
-
-## Monitoring & Management
-
-Use `./apify.sh` to monitor usage:
+## Monitoring
 
 ```bash
-./apify.sh recent      # See recent runs
-./apify.sh usage       # Check account credits
-./apify.sh running     # See active actors
-./apify.sh actors      # List available actors
-./apify.sh test <url>  # Test article extraction
+./apify.sh recent      # Check recent runs
+./apify.sh usage       # Monitor spending
+./apify.sh running     # See active jobs
 ```
 
----
-
-## Recommendations for BIAZ Finance
-
-1. **Keep current implementation** - Manual URL ingestion with Apify content extraction
-2. **Don't add automated discovery yet** - Wait until you have users and understand their needs
-3. **Don't use Apify for fact-checking yet** - AI-only verification is sufficient for MVP
-4. **Monitor usage** - Track cost per article, optimize if needed
-5. **Consider RSS monitoring** - Only after validating product-market fit
-
-**Bottom line:** Current Apify usage is optimal for hackathon and early production. Expand only when you have clear user demand and budget.
+Track in database:
+- Articles ingested per day
+- Average cost per article
+- Cache hit rate (% of cached vs new)
+- Source quality (truth scores by source)
