@@ -15,6 +15,7 @@ async function resolveUrl(url: string): Promise<string> {
     });
     return response.url;
   } catch (error) {
+          failed++;
     return url; // Return original if resolution fails
   }
 }
@@ -43,6 +44,7 @@ export async function monitorRSSFeeds(): Promise<void> {
   let rejectedNoImage = 0;
   let rejectedAd = 0;
   let rejectedDuplicate = 0;
+  let failed = 0;
 
   for (const feedUrl of RSS_FEEDS) {
     try {
@@ -91,10 +93,11 @@ export async function monitorRSSFeeds(): Promise<void> {
             else if (reasons.some(r => r.includes('no valid') || r.includes('no unique'))) rejectedNoImage++;
             else if (reasons.some(r => r.includes('duplicate'))) rejectedDuplicate++;
             else if (reasons.some(r => r.includes('advertisement'))) rejectedAd++;
-            // Silent - tracked in rejection counts
+            else failed++;
           }
         } catch (error) {
-          // Silent - tracked in rejection counts
+          failed++;
+          else failed++;
         }
 
         // Rate limit: max 5 new articles per feed
@@ -108,7 +111,7 @@ export async function monitorRSSFeeds(): Promise<void> {
     }
   }
 
-  log(`RSS monitoring complete: ${totalFound} found, ${ingested} added, ${cached} cached, ${skipped} skipped, rejected: ${rejectedNoStocks} no-stocks + ${rejectedNoImage} no-image + ${rejectedAd} ads + ${rejectedDuplicate} duplicates`);
+  log(`RSS monitoring complete: ${totalFound} found, ${ingested} added, ${cached} cached, ${skipped} skipped, rejected: ${rejectedNoStocks} no-stocks + ${rejectedNoImage} no-image + ${rejectedAd} ads + ${rejectedDuplicate} duplicates + ${failed} other`);
 }
 
 export async function monitorGoogleNews(): Promise<void> {
@@ -121,6 +124,7 @@ export async function monitorGoogleNews(): Promise<void> {
   let rejectedNoImage = 0;
   let rejectedAd = 0;
   let rejectedDuplicate = 0;
+  let failed = 0;
 
   for (const searchQuery of GOOGLE_NEWS_QUERIES) {
     try {
@@ -163,10 +167,11 @@ export async function monitorGoogleNews(): Promise<void> {
             else if (reasons.some(r => r.includes('no valid') || r.includes('no unique'))) rejectedNoImage++;
             else if (reasons.some(r => r.includes('duplicate'))) rejectedDuplicate++;
             else if (reasons.some(r => r.includes('advertisement'))) rejectedAd++;
-            // Silent - tracked in rejection counts
+            else failed++;
           }
         } catch (error) {
-          // Silent - tracked in rejection counts
+          failed++;
+          else failed++;
         }
 
         // Rate limit: max 3 new articles per query
@@ -180,7 +185,7 @@ export async function monitorGoogleNews(): Promise<void> {
     }
   }
 
-  log(`Google News monitoring complete: ${totalFound} found, ${ingested} added, ${cached} cached, rejected: ${rejectedNoStocks} no-stocks + ${rejectedNoImage} no-image + ${rejectedAd} ads + ${rejectedDuplicate} duplicates`);
+  log(`Google News monitoring complete: ${totalFound} found, ${ingested} added, ${cached} cached, rejected: ${rejectedNoStocks} no-stocks + ${rejectedNoImage} no-image + ${rejectedAd} ads + ${rejectedDuplicate} duplicates + ${failed} other`);
 }
 
 export async function runFeedMonitoring(): Promise<void> {
