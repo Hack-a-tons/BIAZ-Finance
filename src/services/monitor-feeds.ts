@@ -39,6 +39,9 @@ export async function monitorRSSFeeds(): Promise<void> {
   let ingested = 0;
   let skipped = 0;
   let cached = 0;
+  let rejectedNoStocks = 0;
+  let rejectedNoImage = 0;
+  let rejectedAd = 0;
 
   for (const feedUrl of RSS_FEEDS) {
     try {
@@ -81,6 +84,11 @@ export async function monitorRSSFeeds(): Promise<void> {
           if (success) {
             ingested++;
           } else {
+            // Track rejection reasons
+            const reasons = results.map(r => r.status === 'rejected' ? r.reason?.message : '').filter(Boolean);
+            if (reasons.some(r => r.includes('no stock symbols'))) rejectedNoStocks++;
+            else if (reasons.some(r => r.includes('no valid image'))) rejectedNoImage++;
+            else if (reasons.some(r => r.includes('advertisement'))) rejectedAd++;
             console.error(`[${new Date().toISOString()}] All methods failed for ${url}`);
           }
         } catch (error) {
@@ -98,7 +106,7 @@ export async function monitorRSSFeeds(): Promise<void> {
     }
   }
 
-  log(`RSS monitoring complete: ${totalFound} found, ${ingested} ingested, ${cached} cached, ${skipped} skipped`);
+  log(`RSS monitoring complete: ${totalFound} found, ${ingested} added, ${cached} cached, ${skipped} skipped, rejected: ${rejectedNoStocks} no-stocks + ${rejectedNoImage} no-image + ${rejectedAd} ads`);
 }
 
 export async function monitorGoogleNews(): Promise<void> {
@@ -107,6 +115,9 @@ export async function monitorGoogleNews(): Promise<void> {
   let totalFound = 0;
   let ingested = 0;
   let cached = 0;
+  let rejectedNoStocks = 0;
+  let rejectedNoImage = 0;
+  let rejectedAd = 0;
 
   for (const searchQuery of GOOGLE_NEWS_QUERIES) {
     try {
@@ -143,6 +154,11 @@ export async function monitorGoogleNews(): Promise<void> {
           if (success) {
             ingested++;
           } else {
+            // Track rejection reasons
+            const reasons = results.map(r => r.status === 'rejected' ? r.reason?.message : '').filter(Boolean);
+            if (reasons.some(r => r.includes('no stock symbols'))) rejectedNoStocks++;
+            else if (reasons.some(r => r.includes('no valid image'))) rejectedNoImage++;
+            else if (reasons.some(r => r.includes('advertisement'))) rejectedAd++;
             console.error(`[${new Date().toISOString()}] All methods failed for ${url}`);
           }
         } catch (error) {
@@ -160,7 +176,7 @@ export async function monitorGoogleNews(): Promise<void> {
     }
   }
 
-  log(`Google News monitoring complete: ${totalFound} found, ${ingested} ingested, ${cached} cached`);
+  log(`Google News monitoring complete: ${totalFound} found, ${ingested} added, ${cached} cached, rejected: ${rejectedNoStocks} no-stocks + ${rejectedNoImage} no-image + ${rejectedAd} ads`);
 }
 
 export async function runFeedMonitoring(): Promise<void> {

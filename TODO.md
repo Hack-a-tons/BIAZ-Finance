@@ -398,6 +398,38 @@ async function generateStockImage(symbol: string): Promise<string> {
 
 ---
 
+## Phase 6.6: Logging & Monitoring ✅
+
+### 6.6.1 Timestamp Format ✅
+All logs include ISO 8601 timestamps: `[2025-10-25T19:30:45.123Z] Log message`
+
+### 6.6.2 Ingestion Warnings ✅
+Expected filtering conditions logged as warnings (not errors):
+- No stock symbols found
+- No valid image (404, wrong content-type, timeout)
+- Advertisement detected (subscription/paywall keywords)
+
+### 6.6.3 Docker Logging ✅
+JSON file driver with rotation:
+- Max size: 10MB per file
+- Max files: 3 rotated files
+- View: `docker compose logs --tail=100`
+
+### 6.6.4 Cron Job Logs ✅
+Single-line format with uppercase tags:
+- `[HEALTH]` - Every 5 minutes
+- `[MONITOR]` - Every 30 minutes
+- `[PRICES]` - Every 15 minutes (market hours)
+- `[RESCORE]` - Daily at 2 AM
+- `[CLEANUP]` - Weekly Sunday 3 AM
+
+### 6.6.5 Rate Limiting ✅
+- Trust proxy configured for nginx
+- General: 100 req/min per IP
+- AI operations: 20 req/5min per IP
+
+---
+
 ## Phase 7: Testing & Validation ✅
 
 ### 7.1 Integration Tests
