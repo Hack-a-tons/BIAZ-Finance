@@ -314,6 +314,90 @@ Rate limits are per-IP, so different IPs can test independently during demos.
 
 ---
 
+## Phase 6.5: Image Service & Article Fetching ✅
+
+### 6.5.1 Image Validation ✅
+All article images are validated before being stored in the database:
+- [x] HTTP HEAD request with 5-second timeout
+- [x] Checks for HTTP 200 status
+- [x] Verifies `Content-Type` header starts with `image/`
+- [x] **Articles without valid images are rejected** during ingestion
+
+### 6.5.2 Parallel Article Fetching ✅
+The system tries all 3 article fetching methods in parallel:
+- [x] **RSS parsing** - Fastest, lightweight
+- [x] **HTTP + Cheerio** - Direct scraping
+- [x] **Apify** - Most robust (but has memory limits)
+- [x] First successful method wins
+- [x] Maximizes chances of getting real article images
+
+### 6.5.3 Fallback Image Service ✅
+
+**Current:** Pexels (Free)
+- URL: `https://images.pexels.com/photos/534216/pexels-photo-534216.jpeg?auto=compress&cs=tinysrgb&w=800&h=600`
+- Status: ✅ Working (HTTP 200)
+- License: Free to use
+- Note: Currently uses a static finance-themed image for all articles
+
+**Previous:** Unsplash Source API
+- Status: ❌ Not working (HTTP 503)
+- Reason: Free tier discontinued
+
+### 6.5.4 Alternative Image Services
+
+**1. Pixabay API (Recommended)**
+```typescript
+function generateStockImage(symbol: string): string {
+  const apiKey = process.env.PIXABAY_API_KEY;
+  return `https://pixabay.com/api/?key=${apiKey}&q=${symbol}+stock+market&image_type=photo&per_page=3`;
+}
+```
+- Free tier: 100 requests/minute
+- No attribution required
+- High-quality images
+- Requires API key (free signup)
+
+**2. Lorem Picsum**
+```typescript
+function generateStockImage(symbol: string): string {
+  return `https://picsum.photos/800/600?random=${symbol}`;
+}
+```
+- Completely free, no API key needed
+- Random images (not finance-specific)
+
+**3. Placeholder.com**
+```typescript
+function generateStockImage(symbol: string): string {
+  return `https://via.placeholder.com/800x600/1a1a2e/eee?text=${symbol}`;
+}
+```
+- Completely free, no API key needed
+- Simple colored placeholders with text
+
+**4. Pexels API (Better Implementation)**
+```typescript
+async function generateStockImage(symbol: string): Promise<string> {
+  const apiKey = process.env.PEXELS_API_KEY;
+  const response = await fetch(
+    `https://api.pexels.com/v1/search?query=${symbol}+stock+market&per_page=1`,
+    { headers: { Authorization: apiKey } }
+  );
+  const data = await response.json();
+  return data.photos[0]?.src?.large || 'fallback-url';
+}
+```
+- Free tier: 200 requests/hour
+- Finance-specific images
+- Requires API key (free signup)
+
+**Production Setup:**
+1. Sign up for free API key (Pixabay or Pexels)
+2. Add to `.env`: `PIXABAY_API_KEY=your_key_here` or `PEXELS_API_KEY=your_key_here`
+3. Update `generateStockImage()` in `src/services/ingest-article.ts`
+
+---
+
 ## Phase 7: Testing & Validation ✅
 
 ### 7.1 Integration Tests
