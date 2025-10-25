@@ -1,48 +1,42 @@
-import { ApifyClient } from 'apify-client';
+import Parser from 'rss-parser';
 import { ingestArticle } from './ingest-article';
+import { query } from '../db';
 
-const client = new ApifyClient({
-  token: process.env.APIFY_API_TOKEN,
-});
+const parser = new Parser();
 
 const RSS_FEEDS = [
   'https://www.ft.com/technology?format=rss',
   'https://techcrunch.com/feed/',
   'https://www.reuters.com/technology/rss',
-  'https://feeds.bloomberg.com/technology/news.rss',
 ];
 
 const GOOGLE_NEWS_QUERIES = [
   'Apple stock',
-  'Tesla stock',
+  'Tesla stock', 
   'NVIDIA earnings',
   'tech stocks',
-  'stock market news',
 ];
 
 export async function monitorRSSFeeds(): Promise<void> {
   console.log('Starting RSS feed monitoring...');
   
-  try {
-    const run = await client.actor('apify/rss-feed-scraper').call({
-      feedUrls: RSS_FEEDS,
-      maxItems: 50,
-    });
+  let totalFound = 0;
+  let ingested = 0;
+  let skipped = 0;
+  let cached = 0;
 
-    const { items } = await client.dataset(run.defaultDatasetId).listItems();
-    console.log(`Found ${items.length} RSS items`);
-
-    let ingested = 0;
-    let skipped = 0;
-
-    for (const rawItem of items) {
-      const item: any = rawItem;
-      try {
-        const url = item.link || item.url;
+  for (const feedUrl of RSS_FEEDS) {
+    try {
+      console.log(`Fetching RSS: ${feedUrl}`);
+      const feed = await parser.parseURL(feedUrl);
+      
+      for (const item of feed.items.slice(0, 20)) {
+        totalFound++;
+        const url = item.link;
         if (!url) continue;
 
         // Filter: only articles with stock-related keywords
-        const title = String(item.title || '').toLowerCase();
+        const title = (item.title || '').toLowerCase();
         const hasStockKeywords = ['stock', 'earnings', 'revenue', 'shares', 'market', 'aapl', 'tsla', 'nvda'].some(
           keyword => title.includes(keyword)
         );
@@ -52,64 +46,81 @@ export async function monitorRSSFeeds(): Promise<void> {
           continue;
         }
 
-        console.log(`Ingesting: ${item.title}`);
-        await ingestArticle(String(url));
-        ingested++;
+        // Check if already in database
+        const existing = await query('SELECT id FROM articles WHERE url = $1', [url]);
+        if (existing.rows.length > 0) {
+          cached++;
+          continue;
+        }
 
-        // Rate limit: don't overwhelm the system
-        if (ingested >= 10) {
-          console.log('Reached ingestion limit for this run');
+        console.log(`Ingesting: ${item.title}`);
+        try {
+          await ingestArticle(url);
+          ingested++;
+        } catch (error) {
+          console.error(`Failed to ingest ${url}:`, error);
+        }
+
+        // Rate limit: max 5 new articles per feed
+        if (ingested >= 5) {
+          console.log('Reached ingestion limit for this feed');
           break;
         }
-      } catch (error) {
-        console.error(`Failed to ingest ${item.link}:`, error);
       }
+    } catch (error) {
+      console.error(`RSS feed error (${feedUrl}):`, error);
     }
-
-    console.log(`RSS monitoring complete: ${ingested} ingested, ${skipped} skipped`);
-  } catch (error) {
-    console.error('RSS monitoring error:', error);
   }
+
+  console.log(`RSS monitoring complete: ${totalFound} found, ${ingested} ingested, ${cached} cached, ${skipped} skipped`);
 }
 
 export async function monitorGoogleNews(): Promise<void> {
   console.log('Starting Google News monitoring...');
   
-  try {
-    const run = await client.actor('apify/google-news-scraper').call({
-      searchQueries: GOOGLE_NEWS_QUERIES,
-      maxArticles: 20,
-      language: 'en',
-    });
+  let totalFound = 0;
+  let ingested = 0;
+  let cached = 0;
 
-    const { items } = await client.dataset(run.defaultDatasetId).listItems();
-    console.log(`Found ${items.length} Google News items`);
-
-    let ingested = 0;
-
-    for (const rawItem of items) {
-      const item: any = rawItem;
-      try {
-        const url = item.link || item.url;
+  for (const query of GOOGLE_NEWS_QUERIES) {
+    try {
+      const googleNewsUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
+      console.log(`Fetching Google News: ${query}`);
+      
+      const feed = await parser.parseURL(googleNewsUrl);
+      
+      for (const item of feed.items.slice(0, 10)) {
+        totalFound++;
+        const url = item.link;
         if (!url) continue;
 
-        console.log(`Ingesting: ${item.title}`);
-        await ingestArticle(String(url));
-        ingested++;
+        // Check if already in database
+        const existing = await query('SELECT id FROM articles WHERE url = $1', [url]);
+        if (existing.rows.length > 0) {
+          cached++;
+          continue;
+        }
 
-        if (ingested >= 10) {
-          console.log('Reached ingestion limit for this run');
+        console.log(`Ingesting: ${item.title}`);
+        try {
+          await ingestArticle(url);
+          ingested++;
+        } catch (error) {
+          console.error(`Failed to ingest ${url}:`, error);
+        }
+
+        // Rate limit: max 3 new articles per query
+        if (ingested >= 3) {
+          console.log('Reached ingestion limit for this query');
           break;
         }
-      } catch (error) {
-        console.error(`Failed to ingest ${item.link}:`, error);
       }
+    } catch (error) {
+      console.error(`Google News error (${query}):`, error);
     }
-
-    console.log(`Google News monitoring complete: ${ingested} ingested`);
-  } catch (error) {
-    console.error('Google News monitoring error:', error);
   }
+
+  console.log(`Google News monitoring complete: ${totalFound} found, ${ingested} ingested, ${cached} cached`);
 }
 
 export async function runFeedMonitoring(): Promise<void> {
