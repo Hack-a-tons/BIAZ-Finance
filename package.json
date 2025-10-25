@@ -14,7 +14,8 @@
     "cors": "^2.8.5",
     "pg": "^8.11.3",
     "openai": "^4.28.0",
-    "@google/generative-ai": "^0.21.0"
+    "@google/generative-ai": "^0.21.0",
+    "apify-client": "^2.9.3"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",

@@ -47,27 +47,18 @@ app.get('/v1/articles/:id', (req, res) => {
   res.json(article);
 });
 
-app.post('/v1/articles/ingest', (req, res) => {
+app.post('/v1/articles/ingest', async (req, res) => {
   const { url, symbol } = req.body;
   if (!url) return res.status(400).json({ error: 'URL required' });
   
-  const newArticle = {
-    id: `art_${Date.now()}`,
-    title: 'Ingested Article (Mock)',
-    summary: 'This is a mock ingested article',
-    url,
-    imageUrl: 'https://picsum.photos/seed/mock/800/600',
-    publishedAt: new Date().toISOString(),
-    source: 'src_001',
-    symbols: symbol ? [symbol] : [],
-    truthScore: 0.85,
-    impactSentiment: 'neutral',
-    claims: [],
-    explanation: 'Mock ingestion - real implementation will extract and verify claims',
-    forecastId: null
-  };
-  
-  res.status(201).json(newArticle);
+  try {
+    const { ingestArticle } = await import('./services/ingest-article');
+    const article = await ingestArticle(url, symbol);
+    res.status(201).json(article);
+  } catch (error: any) {
+    console.error('Ingest error:', error);
+    res.status(500).json({ error: error.message || 'Failed to ingest article' });
+  }
 });
 
 app.post('/v1/articles/:id/score', (req, res) => {
