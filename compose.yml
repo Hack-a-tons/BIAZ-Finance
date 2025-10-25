@@ -3,6 +3,8 @@ services:
     build: .
     ports:
       - "${API_PORT}:${API_PORT}"
+    volumes:
+      - ./prompts:/app/prompts:ro
     environment:
       - API_PORT=${API_PORT}
       - API_URL=${API_URL}

@@ -1,4 +1,5 @@
 import { chat } from '../ai';
+import { getPrompt } from '../ai/prompts';
 
 const COMMON_SYMBOLS = ['AAPL', 'TSLA', 'MSFT', 'GOOGL', 'AMZN', 'META', 'NVDA', 'AMD', 'INTC', 'NFLX'];
 
@@ -15,16 +16,15 @@ export async function extractSymbols(title: string, text: string, manualSymbol?:
     }
 
     // Fallback to AI extraction
-    const prompt = `Extract stock ticker symbols from this financial news. Return ONLY a JSON array of symbols.
-
-Title: ${title}
-Text: ${text.substring(0, 500)}
-
-Return format: ["AAPL", "TSLA"]`;
+    const systemPrompt = getPrompt('extract-symbols-system');
+    const userPrompt = getPrompt('extract-symbols-user', {
+      title,
+      text: text.substring(0, 500)
+    });
 
     const response = await chat([
-      { role: 'system', content: 'You are a financial analyst. Return only valid JSON arrays of stock symbols.' },
-      { role: 'user', content: prompt }
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt }
     ], 0.3);
 
     const jsonMatch = response.match(/\[[\s\S]*?\]/);

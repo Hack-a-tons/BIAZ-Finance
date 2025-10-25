@@ -1,4 +1,5 @@
 import { chat } from './index';
+import { getPrompt } from './prompts';
 
 export interface VerifiedClaim {
   text: string;
@@ -8,23 +9,14 @@ export interface VerifiedClaim {
 }
 
 export async function verifyClaims(claims: Array<{ text: string; confidence: number }>, context: string): Promise<VerifiedClaim[]> {
-  const prompt = `Verify these financial claims. Return ONLY a JSON array.
-
-Context: ${context}
-
-Claims to verify:
-${claims.map((c, i) => `${i + 1}. ${c.text}`).join('\n')}
-
-For each claim, determine:
-- verified: true if claim can be reasonably verified, false if speculative/unverified
-- confidence: 0.0-1.0 confidence in verification
-- evidenceLinks: array of relevant URLs (use official sources, SEC filings, company IR pages)
-
-Return format: [{"text": "claim", "verified": true, "confidence": 0.9, "evidenceLinks": ["url1", "url2"]}, ...]`;
+  const claimsList = claims.map((c, i) => `${i + 1}. ${c.text}`).join('\n');
+  
+  const systemPrompt = getPrompt('verify-claims-system');
+  const userPrompt = getPrompt('verify-claims-user', { context, claimsList });
 
   const response = await chat([
-    { role: 'system', content: 'You are a fact-checker for financial news. Return only valid JSON.' },
-    { role: 'user', content: prompt }
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: userPrompt }
   ], 0.3);
 
   try {
