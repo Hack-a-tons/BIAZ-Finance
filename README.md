@@ -9,6 +9,13 @@ Built at [**De-Vibed Hackathon @ AngelList SF**](https://luma.com/dj3k3tri) — 
 
 ---
 
+## Live Demo
+
+- **Web Client**: https://news.biaz.hurated.com
+- **API Backend**: https://api.news.biaz.hurated.com/v1
+
+---
+
 ## 1. About the Project & Hackathon Context
 
 **Goal**  
@@ -105,6 +112,8 @@ The mockup API is deployed and running at `https://api.news.biaz.hurated.com/v1`
 
 ## 6. Quickstart
 
+### Backend API
+
 ```bash
 cp .env.example .env   # fill at least one AI provider
 docker compose build
@@ -116,3 +125,14 @@ docker compose up -d
 # Deploy to server
 ./scripts/deploy.sh biaz.hurated.com
 ```
+
+### Web Client (Local Development)
+
+```bash
+cd BF.project
+cp .env.example .env   # configure API_URL
+bun install
+bun run start-web      # opens at http://localhost:8081
+```
+
+For mobile development (iOS/Android), see [BF.project/README.md](./BF.project/README.md).
