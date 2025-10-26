@@ -11,7 +11,7 @@ Built at [**De-Vibed Hackathon @ AngelList SF**](https://luma.com/dj3k3tri) — 
 
 ## Live Demo
 
-- **Web Client**: https://news.biaz.hurated.com
+- **Web Client**: https://bf-project.vercel.app
 - **API Backend**: https://api.news.biaz.hurated.com/v1
 
 ---
