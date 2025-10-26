@@ -9,10 +9,11 @@ RUN bun install --frozen-lockfile
 COPY . .
 
 # Build static web bundle
-RUN bunx expo export --platform web
+RUN bunx expo export --platform web && ls -la dist/
 
 # Production stage with nginx
 FROM nginx:alpine
 COPY --from=builder /app/dist /usr/share/nginx/html
+RUN ls -la /usr/share/nginx/html/
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
