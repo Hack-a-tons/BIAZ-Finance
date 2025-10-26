@@ -1,4 +1,4 @@
-FROM oven/bun:1 AS base
+FROM oven/bun:1 AS builder
 WORKDIR /app
 
 # Install dependencies
@@ -8,8 +8,11 @@ RUN bun install --frozen-lockfile
 # Copy source
 COPY . .
 
-# Expose port
-EXPOSE 8081
+# Build static web bundle
+RUN bunx expo export --platform web
 
-# Start web server
-CMD ["bun", "run", "start-web"]
+# Production stage with nginx
+FROM nginx:alpine
+COPY --from=builder /app/dist /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
