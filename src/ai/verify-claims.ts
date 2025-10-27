@@ -9,11 +9,11 @@ export interface VerifiedClaim {
   evidenceLinks: string[];
 }
 
-export async function verifyClaims(claims: Array<{ text: string; confidence: number }>, context: string): Promise<VerifiedClaim[]> {
+export async function verifyClaims(claims: Array<{ text: string; confidence: number }>, context: string, sourceDomain?: string): Promise<VerifiedClaim[]> {
   const claimsList = claims.map((c, i) => `${i + 1}. ${c.text}`).join('\n');
   
   // Check cache
-  const cacheKey = aiCacheKey('verify-claims', claimsList + context);
+  const cacheKey = aiCacheKey('verify-claims', claimsList + context + (sourceDomain || ''));
   const cached = await cacheGet(cacheKey);
   if (cached) {
     return JSON.parse(cached);
@@ -33,10 +33,24 @@ export async function verifyClaims(claims: Array<{ text: string; confidence: num
     
     const verified = JSON.parse(jsonMatch[0]);
     
-    // Cache for 24 hours
-    await cacheSet(cacheKey, JSON.stringify(verified), 86400);
+    // Filter out same-publisher links
+    const filtered = verified.map((v: VerifiedClaim) => ({
+      ...v,
+      evidenceLinks: v.evidenceLinks.filter(link => {
+        try {
+          const linkDomain = new URL(link).hostname.replace('www.', '');
+          const srcDomain = sourceDomain?.replace('www.', '') || 'demo.example.com';
+          return linkDomain !== srcDomain;
+        } catch {
+          return true;
+        }
+      })
+    }));
     
-    return verified;
+    // Cache for 24 hours
+    await cacheSet(cacheKey, JSON.stringify(filtered), 86400);
+    
+    return filtered;
   } catch (error) {
     console.error('Failed to parse verification:', error);
     return claims.map(c => ({

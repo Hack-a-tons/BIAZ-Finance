@@ -136,7 +136,7 @@ export async function ingestArticle(url: string, manualSymbol?: string, rssItem?
     console.log(`[${new Date().toISOString()}] Extracted ${extractedClaims.length} claims`);
 
     // 5. Verify claims
-    const verifiedClaims = await verifyClaims(extractedClaims, fetched.fullText);
+    const verifiedClaims = await verifyClaims(extractedClaims, fetched.fullText, fetched.sourceDomain);
     console.log(`[${new Date().toISOString()}] Verified ${verifiedClaims.filter(c => c.verified).length} claims`);
 
     // 6. Calculate truth score

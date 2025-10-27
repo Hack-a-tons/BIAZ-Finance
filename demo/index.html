@@ -156,7 +156,7 @@ Apple Inc. announced record quarterly earnings today, with revenue reaching $120
 
         function displayResults(data) {
             // Truth Score
-            const score = data.truth_score || 0;
+            const score = data.truthScore ?? data.truth_score ?? 0;
             const scoreEl = document.getElementById('truthScore');
             scoreEl.textContent = score.toFixed(2);
             scoreEl.className = 'score';
@@ -170,7 +170,7 @@ Apple Inc. announced record quarterly earnings today, with revenue reaching $120
             if (data.symbols && data.symbols.length > 0) {
                 symbolsEl.innerHTML = data.symbols.map(s => `
                     <div class="symbol">
-                        <span class="name">${s.symbol}</span>
+                        <span class="name">${s.symbol || s}</span>
                         <span class="price">${s.current_price ? '$' + s.current_price : 'N/A'}</span>
                     </div>
                 `).join('');
@@ -181,20 +181,24 @@ Apple Inc. announced record quarterly earnings today, with revenue reaching $120
             // Claims
             const claimsEl = document.getElementById('claims');
             if (data.claims && data.claims.length > 0) {
-                claimsEl.innerHTML = data.claims.map(c => `
-                    <div class="claim ${c.verified ? 'verified' : 'unverified'}">
-                        <div class="claim-text">${c.text}</div>
-                        <div class="claim-status ${c.verified ? 'verified' : 'unverified'}">
-                            ${c.verified ? '✓' : '✗'} ${c.verified ? 'Verified' : 'Unverified'} 
-                            (${(c.confidence * 100).toFixed(0)}% confidence)
-                        </div>
-                        ${c.evidence && c.evidence.length > 0 ? `
-                            <div class="evidence">
-                                Evidence: ${c.evidence.map(e => `<a href="${e}" target="_blank">${new URL(e).hostname}</a>`).join(', ')}
+                claimsEl.innerHTML = data.claims.map(c => {
+                    const links = c.evidenceLinks || c.evidence || [];
+                    return `
+                        <div class="claim ${c.verified ? 'verified' : 'unverified'}">
+                            <div class="claim-text">${c.text}</div>
+                            <div class="claim-status ${c.verified ? 'verified' : 'unverified'}">
+                                ${c.verified ? '✓' : '✗'} ${c.verified ? 'Verified' : 'Unverified'} 
+                                (${(c.confidence * 100).toFixed(0)}% confidence)
                             </div>
-                        ` : ''}
-                    </div>
-                `).join('');
+                            ${links.length > 0 ? `
+                                <div class="evidence" style="margin-top: 8px; font-size: 0.85em;">
+                                    <strong>Evidence:</strong><br>
+                                    ${links.map(e => `<a href="${e}" target="_blank" style="color: #4a9eff; display: block; margin-top: 4px;">${new URL(e).hostname}</a>`).join('')}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }).join('');
             } else {
                 claimsEl.innerHTML = '<p style="color: #888;">No claims extracted</p>';
             }
