@@ -8,6 +8,14 @@ export interface Source {
   createdAt?: Date;
 }
 
+export interface StockDetail {
+  symbol: string;
+  name: string;
+  price: number | null;
+  change: number | null;
+  link: string;
+}
+
 export interface Article {
   id: string;
   title: string;
@@ -17,8 +25,8 @@ export interface Article {
   publishedAt: string;
   source: string;
   symbols: string[];
-  symbolsMentioned?: string[];
-  symbolsAffected?: string[];
+  symbolsMentioned?: string[] | StockDetail[];
+  symbolsAffected?: string[] | StockDetail[];
   truthScore: number;
   impactSentiment: string;
   claims?: Claim[];

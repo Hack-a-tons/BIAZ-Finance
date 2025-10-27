@@ -108,7 +108,7 @@ export async function ingestArticle(url: string, manualSymbol?: string, rssItem?
 
     // 2. Match or create source
     const sourceId = await matchSource(fetched.sourceDomain);
-    console.log(`[${new Date().toISOString()}] Source: ${sourceId}`);
+    console.log(`[${new Date().toISOString()}] Source: ${sourceId} - "${fetched.title.substring(0, 60)}${fetched.title.length > 60 ? '...' : ''}"`);
 
     // 3. Extract symbols (mentioned and affected)
     const mentionedSymbols = await extractSymbols(fetched.title, fetched.fullText, manualSymbol);
@@ -185,18 +185,7 @@ export async function ingestArticle(url: string, manualSymbol?: string, rssItem?
       }
     }
     
-    // Try AI image generation if still no image
-    if (!imageUrl && symbols.length > 0) {
-      console.log(`[${new Date().toISOString()}] Generating AI image for ${symbols[0]}`);
-      const { generateImage } = await import('../ai/generate-image');
-      const generatedUrl = await generateImage(fetched.title, symbols[0]);
-      if (generatedUrl) {
-        imageUrl = generatedUrl;
-        console.log(`[${new Date().toISOString()}] AI image generated successfully`);
-      }
-    }
-    
-    // For demo content without symbols, use generic news image
+    // For demo content, use generic news image
     if (!imageUrl && directContent) {
       imageUrl = 'https://images.pexels.com/photos/518543/pexels-photo-518543.jpeg?auto=compress&cs=tinysrgb&w=800&h=600';
     }
@@ -299,6 +288,28 @@ export async function ingestArticle(url: string, manualSymbol?: string, rssItem?
 
     console.log(`[${new Date().toISOString()}] Article ingested: ${articleId}`);
 
+    // Fetch stock details for response
+    const stockDetails = await Promise.all(symbols.map(async (symbol) => {
+      const stockResult = await query('SELECT * FROM stocks WHERE symbol = $1', [symbol]);
+      if (stockResult.rows.length > 0) {
+        const stock = stockResult.rows[0];
+        return {
+          symbol: stock.symbol,
+          name: stock.name,
+          price: stock.current_price,
+          change: stock.change,
+          link: `https://finance.yahoo.com/quote/${stock.symbol}`
+        };
+      }
+      return {
+        symbol,
+        name: symbol,
+        price: null,
+        change: null,
+        link: `https://finance.yahoo.com/quote/${symbol}`
+      };
+    }));
+
     return {
       id: articleId,
       title: fetched.title,
@@ -308,8 +319,8 @@ export async function ingestArticle(url: string, manualSymbol?: string, rssItem?
       publishedAt: fetched.publishedAt,
       source: sourceId,
       symbols,
-      symbolsMentioned: mentionedSymbols,
-      symbolsAffected: affectedSymbols,
+      symbolsMentioned: mentionedSymbols.map(s => stockDetails.find(sd => sd.symbol === s) || { symbol: s, name: s, price: null, change: null, link: `https://finance.yahoo.com/quote/${s}` }),
+      symbolsAffected: affectedSymbols.map(s => stockDetails.find(sd => sd.symbol === s) || { symbol: s, name: s, price: null, change: null, link: `https://finance.yahoo.com/quote/${s}` }),
       truthScore,
       impactSentiment,
       claims: verifiedClaims.map(c => ({
