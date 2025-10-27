@@ -13,7 +13,7 @@ export interface Article {
   title: string;
   summary: string;
   url: string;
-  imageUrl: string;
+  imageUrl: string | null;
   publishedAt: string;
   source: string;
   symbols: string[];
