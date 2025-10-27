@@ -305,11 +305,17 @@ export async function ingestArticle(url: string, manualSymbol?: string, rssItem?
       const stockResult = await query('SELECT * FROM stocks WHERE symbol = $1', [symbol]);
       if (stockResult.rows.length > 0) {
         const stock = stockResult.rows[0];
+        // Parse change string ("+0.01%" or "-0.01%") to number
+        let changeNum = null;
+        if (stock.change) {
+          const match = stock.change.match(/([+-]?\d+\.?\d*)/);
+          if (match) changeNum = parseFloat(match[1]);
+        }
         return {
           symbol: stock.symbol,
           name: stock.name,
           price: stock.current_price,
-          change: stock.change,
+          change: changeNum,
           link: `https://finance.yahoo.com/quote/${stock.symbol}`
         };
       }
