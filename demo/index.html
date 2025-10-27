@@ -115,7 +115,10 @@ Apple Inc. announced record quarterly earnings today, with revenue reaching $120
             error.style.display = 'none';
 
             try {
-                // Ingest article
+                // Ingest article with 60s timeout
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 60000);
+                
                 const response = await fetch(`${API_URL}/articles/ingest`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -124,18 +127,26 @@ Apple Inc. announced record quarterly earnings today, with revenue reaching $120
                         title: text.substring(0, 100),
                         content: text,
                         source: 'demo'
-                    })
+                    }),
+                    signal: controller.signal
                 });
+                
+                clearTimeout(timeoutId);
 
                 if (!response.ok) {
-                    throw new Error(`API error: ${response.status} ${response.statusText}`);
+                    const errorText = await response.text().catch(() => response.statusText);
+                    throw new Error(`API error: ${response.status} - ${errorText}`);
                 }
 
                 const data = await response.json();
                 displayResults(data);
                 
             } catch (err) {
-                error.textContent = `Error: ${err.message}`;
+                if (err.name === 'AbortError') {
+                    error.textContent = 'Error: Request timeout (analysis takes too long). Please try a shorter article.';
+                } else {
+                    error.textContent = `Error: ${err.message}`;
+                }
                 error.style.display = 'block';
             } finally {
                 btn.disabled = false;
