@@ -9,7 +9,8 @@ import type { Article } from '../models';
 
 export async function ingestArticle(url: string, manualSymbol?: string, rssItem?: any, method: 'apify' | 'rss' | 'http' = 'apify', directContent?: string, directTitle?: string): Promise<Article> {
   try {
-    console.log(`[${new Date().toISOString()}] Ingesting article: ${url}`);
+    const logUrl = directContent ? 'Pasted article' : url;
+    console.log(`[${new Date().toISOString()}] Ingesting article: ${logUrl}`);
 
     // Check if article already exists
     let checkUrl = url;
@@ -68,8 +69,19 @@ export async function ingestArticle(url: string, manualSymbol?: string, rssItem?
     let fetchMethod = 'direct';
     
     if (directContent) {
+      // Generate title from content if not provided
+      let title = directTitle;
+      if (!title || title.length < 10) {
+        const { chat } = await import('../ai');
+        const titleResponse = await chat([
+          { role: 'system', content: 'You are a news editor. Generate concise, informative headlines.' },
+          { role: 'user', content: `Generate a short, clear headline (max 80 chars) for this article:\n\n${directContent.substring(0, 500)}` }
+        ], 0.5);
+        title = titleResponse.trim().replace(/^["']|["']$/g, '');
+      }
+      
       fetched = {
-        title: directTitle || 'Demo Article',
+        title,
         summary: directContent.substring(0, 200) + '...',
         fullText: directContent,
         url,

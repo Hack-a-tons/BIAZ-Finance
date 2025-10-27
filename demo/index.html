@@ -124,9 +124,7 @@ Apple Inc. announced record quarterly earnings today, with revenue reaching $120
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         url: 'https://demo.example.com/article',
-                        title: text.substring(0, 100),
-                        content: text,
-                        source: 'demo'
+                        content: text
                     }),
                     signal: controller.signal
                 });
@@ -176,7 +174,7 @@ Apple Inc. announced record quarterly earnings today, with revenue reaching $120
                 symbolsHTML += '<div style="margin-bottom: 15px;"><strong style="color: #4a9eff;">Mentioned:</strong><br>';
                 symbolsHTML += mentioned.map(s => {
                     const priceText = s.price ? `$${s.price}` : 'N/A';
-                    const changeText = s.change ? `${s.change > 0 ? '+' : ''}${s.change.toFixed(2)}%` : '';
+                    const changeText = s.change != null ? `${s.change > 0 ? '+' : ''}${s.change.toFixed(2)}%` : '';
                     const changeColor = s.change > 0 ? '#4ade80' : s.change < 0 ? '#f87171' : '#888';
                     return `
                         <a href="${s.link}" target="_blank" style="display: inline-block; background: #2a2a2a; padding: 8px 12px; margin: 5px 5px 0 0; border-radius: 4px; text-decoration: none; color: #fff;">
@@ -192,7 +190,7 @@ Apple Inc. announced record quarterly earnings today, with revenue reaching $120
                 symbolsHTML += '<div><strong style="color: #ff9f4a;">Affected:</strong><br>';
                 symbolsHTML += affected.map(s => {
                     const priceText = s.price ? `$${s.price}` : 'N/A';
-                    const changeText = s.change ? `${s.change > 0 ? '+' : ''}${s.change.toFixed(2)}%` : '';
+                    const changeText = s.change != null ? `${s.change > 0 ? '+' : ''}${s.change.toFixed(2)}%` : '';
                     const changeColor = s.change > 0 ? '#4ade80' : s.change < 0 ? '#f87171' : '#888';
                     return `
                         <a href="${s.link}" target="_blank" style="display: inline-block; background: #2a2a2a; padding: 8px 12px; margin: 5px 5px 0 0; border-radius: 4px; text-decoration: none; color: #fff;">
