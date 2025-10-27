@@ -291,12 +291,12 @@ app.get('/v1/articles/:id', async (req, res) => {
 });
 
 app.post('/v1/articles/ingest', expensiveLimiter, async (req, res) => {
-  const { url, symbol } = req.body;
+  const { url, symbol, content, title } = req.body;
   if (!url) return res.status(400).json({ error: 'URL required' });
   
   try {
     const { ingestArticle } = await import('./services/ingest-article');
-    const article = await ingestArticle(url, symbol);
+    const article = await ingestArticle(url, symbol, undefined, 'apify', content, title);
     res.status(201).json(article);
   } catch (error: any) {
     console.warn(`[${new Date().toISOString()}] Ingest failed: ${error.message}`);

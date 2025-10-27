@@ -7,7 +7,7 @@ import { extractClaims } from '../ai/extract-claims';
 import { verifyClaims, calculateTruthScore } from '../ai/verify-claims';
 import type { Article } from '../models';
 
-export async function ingestArticle(url: string, manualSymbol?: string, rssItem?: any, method: 'apify' | 'rss' | 'http' = 'apify'): Promise<Article> {
+export async function ingestArticle(url: string, manualSymbol?: string, rssItem?: any, method: 'apify' | 'rss' | 'http' = 'apify', directContent?: string, directTitle?: string): Promise<Article> {
   try {
     console.log(`[${new Date().toISOString()}] Ingesting article: ${url}`);
 
@@ -54,30 +54,38 @@ export async function ingestArticle(url: string, manualSymbol?: string, rssItem?
       };
     }
 
-    // 1. Fetch article content - try multiple methods
+    // 1. Fetch article content - skip if content provided directly
     let fetched;
-    let fetchMethod = method;
     
-    try {
-      if (method === 'rss' || rssItem) {
-        // Method 1: RSS parsing (fastest, lightest)
-        fetched = await fetchArticleRSS(url, rssItem);
-        fetchMethod = 'rss';
-      } else if (method === 'http') {
-        // Method 2: Direct HTTP + Cheerio
-        fetched = await fetchArticleRSS(url);
-        fetchMethod = 'http';
-      } else {
-        // Method 3: Apify (most robust, but has limits)
-        fetched = await fetchArticle(url);
-        fetchMethod = 'apify';
-      }
-    } catch (error) {
-      console.log(`[${new Date().toISOString()}] ${fetchMethod} fetch failed, trying fallback...`);
-      // Fallback chain: apify -> http -> rss
-      if (fetchMethod === 'apify') {
-        try {
+    if (directContent) {
+      fetched = {
+        title: directTitle || 'Demo Article',
+        content: directContent,
+        url,
+        publishedAt: new Date().toISOString()
+      };
+    } else {
+      let fetchMethod = method;
+      try {
+        if (method === 'rss' || rssItem) {
+          // Method 1: RSS parsing (fastest, lightest)
           fetched = await fetchArticleRSS(url, rssItem);
+          fetchMethod = 'rss';
+        } else if (method === 'http') {
+          // Method 2: Direct HTTP + Cheerio
+          fetched = await fetchArticleRSS(url);
+          fetchMethod = 'http';
+        } else {
+          // Method 3: Apify (most robust, but has limits)
+          fetched = await fetchArticle(url);
+          fetchMethod = 'apify';
+        }
+      } catch (error) {
+        console.log(`[${new Date().toISOString()}] ${fetchMethod} fetch failed, trying fallback...`);
+        // Fallback chain: apify -> http -> rss
+        if (fetchMethod === 'apify') {
+          try {
+            fetched = await fetchArticleRSS(url, rssItem);
           fetchMethod = 'http';
         } catch (e) {
           throw new Error(`All fetch methods failed: ${error}`);
