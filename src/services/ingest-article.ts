@@ -68,30 +68,27 @@ export async function ingestArticle(url: string, manualSymbol?: string, rssItem?
       let fetchMethod = method;
       try {
         if (method === 'rss' || rssItem) {
-          // Method 1: RSS parsing (fastest, lightest)
           fetched = await fetchArticleRSS(url, rssItem);
           fetchMethod = 'rss';
         } else if (method === 'http') {
-          // Method 2: Direct HTTP + Cheerio
           fetched = await fetchArticleRSS(url);
           fetchMethod = 'http';
         } else {
-          // Method 3: Apify (most robust, but has limits)
           fetched = await fetchArticle(url);
           fetchMethod = 'apify';
         }
       } catch (error) {
         console.log(`[${new Date().toISOString()}] ${fetchMethod} fetch failed, trying fallback...`);
-        // Fallback chain: apify -> http -> rss
         if (fetchMethod === 'apify') {
           try {
             fetched = await fetchArticleRSS(url, rssItem);
-          fetchMethod = 'http';
-        } catch (e) {
-          throw new Error(`All fetch methods failed: ${error}`);
+            fetchMethod = 'http';
+          } catch (e) {
+            throw new Error(`All fetch methods failed: ${error}`);
+          }
+        } else {
+          throw error;
         }
-      } else {
-        throw error;
       }
     }
     
