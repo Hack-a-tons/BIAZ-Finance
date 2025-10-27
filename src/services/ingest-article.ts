@@ -332,6 +332,7 @@ export async function ingestArticle(url: string, manualSymbol?: string, rssItem?
       id: articleId,
       title: fetched.title,
       summary: fetched.summary,
+      forecastSummary,
       url: checkUrl,
       imageUrl,
       publishedAt: fetched.publishedAt,

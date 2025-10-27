@@ -20,6 +20,7 @@ export interface Article {
   id: string;
   title: string;
   summary: string;
+  forecastSummary?: string | null;
   url: string;
   imageUrl: string | null;
   publishedAt: string;

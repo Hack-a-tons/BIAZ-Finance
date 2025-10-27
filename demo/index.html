@@ -238,7 +238,14 @@ Apple Inc. announced record quarterly earnings today, with revenue reaching $120
 
             // Forecasts
             const forecastsEl = document.getElementById('forecasts');
-            if (data.forecasts && data.forecasts.length > 0) {
+            if (data.forecastSummary) {
+                forecastsEl.innerHTML = `
+                    <div style="background: #2a2a2a; padding: 15px; border-radius: 8px; border-left: 4px solid #4a9eff;">
+                        <strong style="color: #4a9eff;">Market Impact Analysis</strong>
+                        <p style="margin-top: 10px; line-height: 1.6; color: #ccc;">${data.forecastSummary}</p>
+                    </div>
+                `;
+            } else if (data.forecasts && data.forecasts.length > 0) {
                 forecastsEl.innerHTML = data.forecasts.map(f => `
                     <div class="forecast">
                         <div class="forecast-header">
