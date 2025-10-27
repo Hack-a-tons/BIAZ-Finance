@@ -56,16 +56,19 @@ export async function ingestArticle(url: string, manualSymbol?: string, rssItem?
 
     // 1. Fetch article content - skip if content provided directly
     let fetched;
+    let fetchMethod = 'direct';
     
     if (directContent) {
       fetched = {
         title: directTitle || 'Demo Article',
-        content: directContent,
+        summary: directContent.substring(0, 200) + '...',
+        fullText: directContent,
         url,
-        publishedAt: new Date().toISOString()
+        publishedAt: new Date().toISOString(),
+        sourceDomain: 'demo.example.com'
       };
     } else {
-      let fetchMethod = method;
+      fetchMethod = method;
       try {
         if (method === 'rss' || rssItem) {
           fetched = await fetchArticleRSS(url, rssItem);
