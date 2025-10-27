@@ -40,13 +40,10 @@ services:
 
   web:
     build:
-      context: ./BF.project
+      context: ./demo
       dockerfile: Dockerfile
     ports:
       - "${WEB_PORT}:80"
-    environment:
-      - API_URL=${API_URL}
-      - WEB_URL=${WEB_URL}
     restart: unless-stopped
     logging:
       driver: "json-file"

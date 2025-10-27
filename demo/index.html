@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BIAZ Finance - Article Analysis Demo</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0a; color: #e0e0e0; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { color: #00ff88; margin-bottom: 10px; font-size: 2em; }
+        .subtitle { color: #888; margin-bottom: 30px; }
+        textarea { width: 100%; min-height: 200px; padding: 15px; background: #1a1a1a; border: 1px solid #333; border-radius: 8px; color: #e0e0e0; font-size: 14px; resize: vertical; }
+        button { background: #00ff88; color: #0a0a0a; border: none; padding: 12px 30px; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 15px; }
+        button:hover { background: #00dd77; }
+        button:disabled { background: #333; color: #666; cursor: not-allowed; }
+        .loading { display: none; color: #00ff88; margin-top: 20px; }
+        .loading.active { display: block; }
+        .results { margin-top: 30px; display: none; }
+        .results.active { display: block; }
+        .section { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+        .section h2 { color: #00ff88; margin-bottom: 15px; font-size: 1.3em; }
+        .score { font-size: 2em; font-weight: bold; color: #00ff88; }
+        .score.low { color: #ff4444; }
+        .score.medium { color: #ffaa00; }
+        .symbol { display: inline-block; background: #2a2a2a; padding: 8px 15px; border-radius: 6px; margin: 5px; }
+        .symbol .name { color: #00ff88; font-weight: 600; }
+        .symbol .price { color: #888; margin-left: 10px; }
+        .claim { background: #2a2a2a; padding: 15px; border-radius: 6px; margin-bottom: 10px; border-left: 3px solid #00ff88; }
+        .claim.unverified { border-left-color: #ff4444; }
+        .claim-text { margin-bottom: 8px; }
+        .claim-status { font-size: 0.9em; color: #888; }
+        .claim-status.verified { color: #00ff88; }
+        .claim-status.unverified { color: #ff4444; }
+        .evidence { margin-top: 8px; font-size: 0.85em; }
+        .evidence a { color: #00aaff; text-decoration: none; }
+        .evidence a:hover { text-decoration: underline; }
+        .forecast { background: #2a2a2a; padding: 15px; border-radius: 6px; margin-bottom: 10px; }
+        .forecast-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .sentiment { padding: 4px 12px; border-radius: 4px; font-size: 0.9em; font-weight: 600; }
+        .sentiment.positive { background: #00ff8844; color: #00ff88; }
+        .sentiment.negative { background: #ff444444; color: #ff4444; }
+        .sentiment.neutral { background: #ffaa0044; color: #ffaa00; }
+        .error { background: #ff444422; border: 1px solid #ff4444; color: #ff4444; padding: 15px; border-radius: 8px; margin-top: 20px; }
+        pre { background: #0a0a0a; padding: 15px; border-radius: 6px; overflow-x: auto; font-size: 0.85em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>BIAZ Finance - Article Analysis</h1>
+        <p class="subtitle">Paste any financial article to get AI-powered truth scoring, claim verification, and impact forecasts</p>
+        
+        <div class="section">
+            <textarea id="articleText" placeholder="Paste article text here...
+
+Example:
+Apple Inc. announced record quarterly earnings today, with revenue reaching $120 billion. The company's new AI chip is expected to revolutionize the smartphone market. CEO Tim Cook stated that iPhone sales increased by 25% year-over-year."></textarea>
+            <button id="analyzeBtn" onclick="analyzeArticle()">Analyze Article</button>
+        </div>
+
+        <div class="loading" id="loading">
+            <p>🔍 Analyzing article...</p>
+            <p style="color: #888; font-size: 0.9em; margin-top: 5px;">This may take 30-60 seconds as AI extracts claims, verifies facts, and generates forecasts...</p>
+        </div>
+
+        <div class="error" id="error" style="display: none;"></div>
+
+        <div class="results" id="results">
+            <div class="section">
+                <h2>📊 Truth Score</h2>
+                <div class="score" id="truthScore">-</div>
+                <p id="explanation" style="margin-top: 15px; color: #ccc;"></p>
+            </div>
+
+            <div class="section">
+                <h2>📈 Symbols Detected</h2>
+                <div id="symbols"></div>
+            </div>
+
+            <div class="section">
+                <h2>✓ Claims Analysis</h2>
+                <div id="claims"></div>
+            </div>
+
+            <div class="section">
+                <h2>🎯 Impact Forecasts</h2>
+                <div id="forecasts"></div>
+            </div>
+
+            <div class="section">
+                <h2>📄 Full API Response</h2>
+                <pre id="rawResponse"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://api.news.biaz.hurated.com/v1';
+
+        async function analyzeArticle() {
+            const text = document.getElementById('articleText').value.trim();
+            if (!text) {
+                alert('Please paste article text first');
+                return;
+            }
+
+            const btn = document.getElementById('analyzeBtn');
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+            const error = document.getElementById('error');
+
+            btn.disabled = true;
+            loading.classList.add('active');
+            results.classList.remove('active');
+            error.style.display = 'none';
+
+            try {
+                // Ingest article
+                const response = await fetch(`${API_URL}/articles/ingest`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        url: 'https://demo.example.com/article',
+                        title: text.substring(0, 100),
+                        content: text,
+                        source: 'demo'
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status} ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                displayResults(data);
+                
+            } catch (err) {
+                error.textContent = `Error: ${err.message}`;
+                error.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                loading.classList.remove('active');
+            }
+        }
+
+        function displayResults(data) {
+            // Truth Score
+            const score = data.truth_score || 0;
+            const scoreEl = document.getElementById('truthScore');
+            scoreEl.textContent = score.toFixed(2);
+            scoreEl.className = 'score';
+            if (score < 0.5) scoreEl.classList.add('low');
+            else if (score < 0.75) scoreEl.classList.add('medium');
+            
+            document.getElementById('explanation').textContent = data.explanation || 'No explanation available';
+
+            // Symbols
+            const symbolsEl = document.getElementById('symbols');
+            if (data.symbols && data.symbols.length > 0) {
+                symbolsEl.innerHTML = data.symbols.map(s => `
+                    <div class="symbol">
+                        <span class="name">${s.symbol}</span>
+                        <span class="price">${s.current_price ? '$' + s.current_price : 'N/A'}</span>
+                    </div>
+                `).join('');
+            } else {
+                symbolsEl.innerHTML = '<p style="color: #888;">No stock symbols detected</p>';
+            }
+
+            // Claims
+            const claimsEl = document.getElementById('claims');
+            if (data.claims && data.claims.length > 0) {
+                claimsEl.innerHTML = data.claims.map(c => `
+                    <div class="claim ${c.verified ? 'verified' : 'unverified'}">
+                        <div class="claim-text">${c.text}</div>
+                        <div class="claim-status ${c.verified ? 'verified' : 'unverified'}">
+                            ${c.verified ? '✓' : '✗'} ${c.verified ? 'Verified' : 'Unverified'} 
+                            (${(c.confidence * 100).toFixed(0)}% confidence)
+                        </div>
+                        ${c.evidence && c.evidence.length > 0 ? `
+                            <div class="evidence">
+                                Evidence: ${c.evidence.map(e => `<a href="${e}" target="_blank">${new URL(e).hostname}</a>`).join(', ')}
+                            </div>
+                        ` : ''}
+                    </div>
+                `).join('');
+            } else {
+                claimsEl.innerHTML = '<p style="color: #888;">No claims extracted</p>';
+            }
+
+            // Forecasts
+            const forecastsEl = document.getElementById('forecasts');
+            if (data.forecasts && data.forecasts.length > 0) {
+                forecastsEl.innerHTML = data.forecasts.map(f => `
+                    <div class="forecast">
+                        <div class="forecast-header">
+                            <strong>${f.symbol}</strong>
+                            <span class="sentiment ${f.sentiment}">${f.sentiment.toUpperCase()}</span>
+                        </div>
+                        <div style="color: #ccc; font-size: 0.9em;">
+                            Impact: ${(f.impact_score * 100).toFixed(0)}% | 
+                            Confidence: ${(f.confidence * 100).toFixed(0)}% | 
+                            Horizon: ${f.time_horizon}
+                        </div>
+                        ${f.reasoning ? `<div style="margin-top: 10px; color: #aaa; font-size: 0.9em;">${f.reasoning}</div>` : ''}
+                    </div>
+                `).join('');
+            } else {
+                forecastsEl.innerHTML = '<p style="color: #888;">No forecasts generated</p>';
+            }
+
+            // Raw response
+            document.getElementById('rawResponse').textContent = JSON.stringify(data, null, 2);
+
+            // Show results
+            document.getElementById('results').classList.add('active');
+        }
+    </script>
+</body>
+</html>
