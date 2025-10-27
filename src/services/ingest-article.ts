@@ -203,11 +203,13 @@ export async function ingestArticle(url: string, manualSymbol?: string, rssItem?
       throw new Error('No valid unique image URL found for article');
     }
     
-    // Check for duplicate titles
-    const existingTitle = await query('SELECT id FROM articles WHERE title = $1', [fetched.title]);
-    if (existingTitle.rows.length > 0) {
-      console.warn(`[${new Date().toISOString()}] Skipping article (duplicate title): ${url}`);
-      throw new Error('Article with same title already exists');
+    // Check for duplicate titles (skip for demo content - already checked by hash)
+    if (!directContent) {
+      const existingTitle = await query('SELECT id FROM articles WHERE title = $1', [fetched.title]);
+      if (existingTitle.rows.length > 0) {
+        console.warn(`[${new Date().toISOString()}] Skipping article (duplicate title): ${checkUrl}`);
+        throw new Error('Article with same title already exists');
+      }
     }
     
     // Ensure title and summary are different
