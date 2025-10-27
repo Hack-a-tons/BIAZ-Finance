@@ -103,10 +103,10 @@ export async function ingestArticle(url: string, manualSymbol?: string, rssItem?
 
     // 3. Extract symbols
     const symbols = await extractSymbols(fetched.title, fetched.fullText, manualSymbol);
-    console.log(`[${new Date().toISOString()}] Symbols: ${symbols.join(', ')}`);
+    console.log(`[${new Date().toISOString()}] Symbols: ${symbols.join(', ') || 'none'}`);
     
-    // Reject articles without stocks
-    if (symbols.length === 0) {
+    // Allow articles without stocks for demo/analysis purposes
+    if (symbols.length === 0 && !directContent) {
       console.warn(`[${new Date().toISOString()}] Skipping article (no stock symbols): ${url}`);
       throw new Error('No stock symbols found in article');
     }
@@ -137,13 +137,16 @@ export async function ingestArticle(url: string, manualSymbol?: string, rssItem?
     // 7. Determine impact sentiment
     const impactSentiment = determineImpactSentiment(verifiedClaims, fetched.fullText);
 
-    // 8. Generate forecast summary
-    const { generateForecastSummary } = await import('../ai/generate-forecast');
-    const forecastSummary = await generateForecastSummary(
-      { title: fetched.title, fullText: fetched.fullText, truthScore },
-      symbols
-    );
-    console.log(`[${new Date().toISOString()}] Generated forecast summary`);
+    // 8. Generate forecast summary (only if symbols exist)
+    let forecastSummary = null;
+    if (symbols.length > 0) {
+      const { generateForecastSummary } = await import('../ai/generate-forecast');
+      forecastSummary = await generateForecastSummary(
+        { title: fetched.title, fullText: fetched.fullText, truthScore },
+        symbols
+      );
+      console.log(`[${new Date().toISOString()}] Generated forecast summary`);
+    }
 
     // 9. Store in database
     const articleId = `art_${Date.now()}`;
@@ -180,8 +183,13 @@ export async function ingestArticle(url: string, manualSymbol?: string, rssItem?
       }
     }
     
-    // Reject articles without valid unique images
-    if (!imageUrl) {
+    // For demo content without symbols, use generic news image
+    if (!imageUrl && directContent) {
+      imageUrl = 'https://images.pexels.com/photos/518543/pexels-photo-518543.jpeg?auto=compress&cs=tinysrgb&w=800&h=600';
+    }
+    
+    // Reject articles without valid unique images (except demo content)
+    if (!imageUrl && !directContent) {
       console.warn(`[${new Date().toISOString()}] Skipping article (no unique image): ${url}`);
       throw new Error('No valid unique image URL found for article');
     }
