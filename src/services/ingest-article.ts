@@ -11,47 +11,49 @@ export async function ingestArticle(url: string, manualSymbol?: string, rssItem?
   try {
     console.log(`[${new Date().toISOString()}] Ingesting article: ${url}`);
 
-    // Check if article already exists
-    const existing = await query('SELECT id FROM articles WHERE url = $1', [url]);
-    if (existing.rows.length > 0) {
-      console.log(`[${new Date().toISOString()}] Article already exists: ${existing.rows[0].id}`);
-      // Return existing article with full details
-      const articleId = existing.rows[0].id;
-      const articleResult = await query(
-        'SELECT * FROM articles WHERE id = $1',
-        [articleId]
-      );
-      const symbolsResult = await query(
-        'SELECT symbol FROM article_symbols WHERE article_id = $1',
-        [articleId]
-      );
-      const claimsResult = await query(
-        'SELECT c.*, array_agg(ce.url) as evidence_links FROM claims c LEFT JOIN claim_evidence ce ON c.id = ce.claim_id WHERE c.article_id = $1 GROUP BY c.id',
-        [articleId]
-      );
-      
-      const article = articleResult.rows[0];
-      return {
-        id: article.id,
-        title: article.title,
-        summary: article.summary,
-        url: article.url,
-        imageUrl: article.image_url,
-        publishedAt: article.published_at,
-        source: article.source_id,
-        symbols: symbolsResult.rows.map(r => r.symbol),
-        truthScore: parseFloat(article.truth_score),
-        impactSentiment: article.impact_sentiment,
-        claims: claimsResult.rows.map(c => ({
-          id: c.id,
-          text: c.text,
-          verified: c.verified,
-          confidence: parseFloat(c.confidence),
-          evidenceLinks: c.evidence_links.filter((l: string) => l !== null)
-        })),
-        explanation: article.explanation,
-        forecastId: null
-      };
+    // Check if article already exists (skip for demo content)
+    if (!directContent) {
+      const existing = await query('SELECT id FROM articles WHERE url = $1', [url]);
+      if (existing.rows.length > 0) {
+        console.log(`[${new Date().toISOString()}] Article already exists: ${existing.rows[0].id}`);
+        // Return existing article with full details
+        const articleId = existing.rows[0].id;
+        const articleResult = await query(
+          'SELECT * FROM articles WHERE id = $1',
+          [articleId]
+        );
+        const symbolsResult = await query(
+          'SELECT symbol FROM article_symbols WHERE article_id = $1',
+          [articleId]
+        );
+        const claimsResult = await query(
+          'SELECT c.*, array_agg(ce.url) as evidence_links FROM claims c LEFT JOIN claim_evidence ce ON c.id = ce.claim_id WHERE c.article_id = $1 GROUP BY c.id',
+          [articleId]
+        );
+        
+        const article = articleResult.rows[0];
+        return {
+          id: article.id,
+          title: article.title,
+          summary: article.summary,
+          url: article.url,
+          imageUrl: article.image_url,
+          publishedAt: article.published_at,
+          source: article.source_id,
+          symbols: symbolsResult.rows.map(r => r.symbol),
+          truthScore: parseFloat(article.truth_score),
+          impactSentiment: article.impact_sentiment,
+          claims: claimsResult.rows.map(c => ({
+            id: c.id,
+            text: c.text,
+            verified: c.verified,
+            confidence: parseFloat(c.confidence),
+            evidenceLinks: c.evidence_links.filter((l: string) => l !== null)
+          })),
+          explanation: article.explanation,
+          forecastId: null
+        };
+      }
     }
 
     // 1. Fetch article content - skip if content provided directly
