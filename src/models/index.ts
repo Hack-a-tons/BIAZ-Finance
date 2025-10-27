@@ -17,6 +17,8 @@ export interface Article {
   publishedAt: string;
   source: string;
   symbols: string[];
+  symbolsMentioned?: string[];
+  symbolsAffected?: string[];
   truthScore: number;
   impactSentiment: string;
   claims?: Claim[];

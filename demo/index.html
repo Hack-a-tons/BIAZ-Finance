@@ -167,13 +167,25 @@ Apple Inc. announced record quarterly earnings today, with revenue reaching $120
 
             // Symbols
             const symbolsEl = document.getElementById('symbols');
-            if (data.symbols && data.symbols.length > 0) {
-                symbolsEl.innerHTML = data.symbols.map(s => `
-                    <div class="symbol">
-                        <span class="name">${s.symbol || s}</span>
-                        <span class="price">${s.current_price ? '$' + s.current_price : 'N/A'}</span>
-                    </div>
-                `).join('');
+            const mentioned = data.symbolsMentioned || [];
+            const affected = data.symbolsAffected || [];
+            
+            let symbolsHTML = '';
+            
+            if (mentioned.length > 0) {
+                symbolsHTML += '<div style="margin-bottom: 15px;"><strong style="color: #4a9eff;">Mentioned:</strong><br>';
+                symbolsHTML += mentioned.map(s => `<span style="display: inline-block; background: #2a2a2a; padding: 5px 10px; margin: 5px 5px 0 0; border-radius: 4px;">${s}</span>`).join('');
+                symbolsHTML += '</div>';
+            }
+            
+            if (affected.length > 0) {
+                symbolsHTML += '<div><strong style="color: #ff9f4a;">Affected:</strong><br>';
+                symbolsHTML += affected.map(s => `<span style="display: inline-block; background: #2a2a2a; padding: 5px 10px; margin: 5px 5px 0 0; border-radius: 4px;">${s}</span>`).join('');
+                symbolsHTML += '</div>';
+            }
+            
+            if (symbolsHTML) {
+                symbolsEl.innerHTML = symbolsHTML;
             } else {
                 symbolsEl.innerHTML = '<p style="color: #888;">No stock symbols detected</p>';
             }

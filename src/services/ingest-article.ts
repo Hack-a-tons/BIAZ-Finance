@@ -2,7 +2,7 @@ import { query } from '../db';
 import { fetchArticle } from './fetch-article';
 import { fetchArticleRSS } from './fetch-article-rss';
 import { matchSource } from './match-source';
-import { extractSymbols } from './extract-symbols';
+import { extractSymbols, extractAffectedSymbols } from './extract-symbols';
 import { extractClaims } from '../ai/extract-claims';
 import { verifyClaims, calculateTruthScore } from '../ai/verify-claims';
 import type { Article } from '../models';
@@ -110,13 +110,17 @@ export async function ingestArticle(url: string, manualSymbol?: string, rssItem?
     const sourceId = await matchSource(fetched.sourceDomain);
     console.log(`[${new Date().toISOString()}] Source: ${sourceId}`);
 
-    // 3. Extract symbols
-    const symbols = await extractSymbols(fetched.title, fetched.fullText, manualSymbol);
-    console.log(`[${new Date().toISOString()}] Symbols: ${symbols.join(', ') || 'none'}`);
+    // 3. Extract symbols (mentioned and affected)
+    const mentionedSymbols = await extractSymbols(fetched.title, fetched.fullText, manualSymbol);
+    const affectedSymbols = mentionedSymbols.length === 0 ? await extractAffectedSymbols(fetched.title, fetched.fullText) : [];
+    const symbols = [...new Set([...mentionedSymbols, ...affectedSymbols])]; // Combine and dedupe
+    
+    console.log(`[${new Date().toISOString()}] Symbols mentioned: ${mentionedSymbols.join(', ') || 'none'}`);
+    console.log(`[${new Date().toISOString()}] Symbols affected: ${affectedSymbols.join(', ') || 'none'}`);
     
     // Allow articles without stocks for demo/analysis purposes
     if (symbols.length === 0 && !directContent) {
-      console.warn(`[${new Date().toISOString()}] Skipping article (no stock symbols): ${url}`);
+      console.warn(`[${new Date().toISOString()}] Skipping article (no stock symbols): ${checkUrl}`);
       throw new Error('No stock symbols found in article');
     }
     
@@ -304,6 +308,8 @@ export async function ingestArticle(url: string, manualSymbol?: string, rssItem?
       publishedAt: fetched.publishedAt,
       source: sourceId,
       symbols,
+      symbolsMentioned: mentionedSymbols,
+      symbolsAffected: affectedSymbols,
       truthScore,
       impactSentiment,
       claims: verifiedClaims.map(c => ({
