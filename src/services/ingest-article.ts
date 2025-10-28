@@ -273,10 +273,27 @@ export async function ingestArticle(url: string, manualSymbol?: string, rssItem?
         );
       }
 
-      await query(
-        'INSERT INTO article_symbols (article_id, symbol) VALUES ($1, $2)',
-        [articleId, symbol]
-      );
+      // Ensure symbol exists before inserting into article_symbols
+      try {
+        await query(
+          'INSERT INTO article_symbols (article_id, symbol) VALUES ($1, $2)',
+          [articleId, symbol]
+        );
+      } catch (symbolError: any) {
+        console.error(`Failed to insert article_symbol for ${symbol}:`, symbolError.message);
+        // Try to insert the symbol first if it doesn't exist
+        await query(
+          `INSERT INTO stocks (symbol, name, exchange, sector)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT (symbol) DO NOTHING`,
+          [symbol, `${symbol} Inc.`, 'NASDAQ', 'Technology']
+        );
+        // Retry the article_symbols insert
+        await query(
+          'INSERT INTO article_symbols (article_id, symbol) VALUES ($1, $2)',
+          [articleId, symbol]
+        );
+      }
     }
 
     // Store claims
