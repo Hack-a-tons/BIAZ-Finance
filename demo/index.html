@@ -144,7 +144,8 @@ Apple Inc. announced record quarterly earnings today, with revenue reaching $120
                 const { taskId } = await response.json();
                 
                 // Poll for results
-                await pollTaskStatus(taskId);
+                const result = await pollTaskStatus(taskId);
+                displayResults(result);
                 
             } catch (err) {
                 console.error('Analysis failed:', err);
@@ -160,34 +161,39 @@ Apple Inc. announced record quarterly earnings today, with revenue reaching $120
             const maxAttempts = 60; // 2 minutes max
             let attempts = 0;
 
-            const checkStatus = async () => {
-                attempts++;
-                
-                try {
-                    const response = await fetch(`${API_URL}/tasks/${taskId}`);
-                    const task = await response.json();
+            return new Promise((resolve, reject) => {
+                const checkStatus = async () => {
+                    attempts++;
+                    
+                    try {
+                        const response = await fetch(`${API_URL}/tasks/${taskId}`);
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        }
+                        
+                        const task = await response.json();
 
-                    // Update loading message with progress
-                    const loading = document.getElementById('loading');
-                    loading.innerHTML = `Analyzing article... ${task.progress}% complete<br><small>Status: ${task.status}</small>`;
+                        // Update loading message with progress
+                        const loading = document.getElementById('loading');
+                        loading.innerHTML = `Analyzing article... ${task.progress}% complete<br><small>Status: ${task.status}</small>`;
 
-                    if (task.status === 'completed') {
-                        displayResults(task.result);
-                        return;
-                    } else if (task.status === 'failed') {
-                        throw new Error(task.error || 'Analysis failed');
-                    } else if (attempts >= maxAttempts) {
-                        throw new Error('Analysis timeout - please try again');
-                    } else {
-                        // Continue polling
-                        setTimeout(checkStatus, 2000);
+                        if (task.status === 'completed') {
+                            resolve(task.result);
+                        } else if (task.status === 'failed') {
+                            reject(new Error(task.error || 'Analysis failed'));
+                        } else if (attempts >= maxAttempts) {
+                            reject(new Error('Analysis timeout - please try again'));
+                        } else {
+                            // Continue polling
+                            setTimeout(checkStatus, 2000);
+                        }
+                    } catch (err) {
+                        reject(err);
                     }
-                } catch (err) {
-                    throw err;
-                }
-            };
+                };
 
-            await checkStatus();
+                checkStatus();
+            });
         }
 
         function displayResults(data) {
