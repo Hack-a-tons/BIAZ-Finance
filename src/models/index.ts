@@ -33,6 +33,7 @@ export interface Article {
   claims?: Claim[];
   explanation: string;
   forecastId: string | null;
+  permanentUrl?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }

@@ -5,6 +5,8 @@ import rateLimit from 'express-rate-limit';
 import mockData from '../mock-data.json';
 import pool from './db';
 import { cacheGet, cacheSet, articleListCacheKey } from './cache';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
 dotenv.config();
 
@@ -92,6 +94,95 @@ app.get('/health', async (req, res) => {
   });
 });
 
+// Article HTML pages for permanent URLs
+app.get('/article/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Get article data
+    const articleResult = await pool.query(
+      `SELECT a.*, s.name as source_name 
+       FROM articles a 
+       LEFT JOIN sources s ON a.source_id = s.id 
+       WHERE a.id = $1`,
+      [id]
+    );
+    
+    if (articleResult.rows.length === 0) {
+      return res.status(404).send('<h1>Article not found</h1>');
+    }
+    
+    const article = articleResult.rows[0];
+    
+    // Get symbols and claims
+    const [symbolsResult, claimsResult] = await Promise.all([
+      pool.query('SELECT symbol FROM article_symbols WHERE article_id = $1', [id]),
+      pool.query(
+        `SELECT c.text, c.verified, c.confidence,
+                array_agg(ce.url) FILTER (WHERE ce.url IS NOT NULL) as evidence_links
+         FROM claims c
+         LEFT JOIN claim_evidence ce ON c.id = ce.claim_id
+         WHERE c.article_id = $1
+         GROUP BY c.text, c.verified, c.confidence`,
+        [id]
+      )
+    ]);
+    
+    // Get stock details
+    const symbols = symbolsResult.rows.map((s: any) => s.symbol);
+    const stockDetails = await Promise.all(symbols.map(async (symbol) => {
+      const stockResult = await pool.query('SELECT * FROM stocks WHERE symbol = $1', [symbol]);
+      if (stockResult.rows.length > 0) {
+        const stock = stockResult.rows[0];
+        let changeNum = null;
+        if (stock.change) {
+          const match = stock.change.match(/([+-]?\d+\.?\d*)/);
+          if (match) changeNum = parseFloat(match[1]);
+        }
+        return {
+          symbol: stock.symbol,
+          name: stock.name,
+          price: stock.current_price,
+          change: changeNum
+        };
+      }
+      return { symbol, name: symbol, price: null, change: null };
+    }));
+    
+    // Load and render template
+    const template = readFileSync(join(__dirname, '../public/article-template.html'), 'utf8');
+    const truthScore = article.truth_score ? parseFloat(article.truth_score) : 0;
+    const scoreColor = truthScore >= 0.8 ? '#34C759' : truthScore >= 0.6 ? '#FF9500' : '#FF3B30';
+    
+    const html = template
+      .replace(/{{title}}/g, article.title || 'Untitled')
+      .replace(/{{summary}}/g, article.summary || '')
+      .replace(/{{explanation}}/g, article.explanation || '')
+      .replace(/{{truthScorePercent}}/g, Math.round(truthScore * 100).toString())
+      .replace(/{{scoreColor}}/g, scoreColor)
+      .replace(/{{imageUrl}}/g, article.image_url || '')
+      .replace(/{{permanentUrl}}/g, `https://news.biaz.hurated.com/article/${id}`)
+      .replace(/{{forecastSummary}}/g, article.forecast_summary || '')
+      .replace(/{{#symbolsAffected.length}}[\s\S]*?{{\/symbolsAffected.length}}/g, 
+        stockDetails.length > 0 ? `<div class="stocks"><h3>Affected Stocks:</h3>${stockDetails.map(s => 
+          `<div class="stock"><strong>${s.symbol}</strong> - ${s.name}<br>$${s.price} ${s.change ? `(${s.change > 0 ? '+' : ''}${s.change}%)` : ''}</div>`
+        ).join('')}</div>` : '')
+      .replace(/{{#claims}}[\s\S]*?{{\/claims}}/g, 
+        claimsResult.rows.map((c: any) => 
+          `<div class="claim ${c.verified ? 'verified' : 'unverified'}">
+            <p><strong>${c.text}</strong></p>
+            <p>Confidence: ${Math.round(c.confidence * 100)}% | Status: ${c.verified ? '✅ Verified' : '❌ Unverified'}</p>
+            ${c.evidence_links ? `<div class="evidence">Evidence: ${c.evidence_links.map((link: string) => `<a href="${link}" target="_blank">Source</a>`).join(' ')}</div>` : ''}
+          </div>`
+        ).join(''));
+    
+    res.send(html);
+  } catch (error: any) {
+    console.error(`Article page error: ${error.message}`);
+    res.status(500).send('<h1>Error loading article</h1>');
+  }
+});
+
 // Articles endpoints
 app.get('/v1/articles', async (req, res) => {
   try {
@@ -161,7 +252,8 @@ app.get('/v1/articles', async (req, res) => {
         sourceName: row.source_name,
         symbols: symbolsResult.rows.map((s: any) => s.symbol),
         truthScore: row.truth_score ? parseFloat(row.truth_score) : null,
-        impactSentiment: row.impact_sentiment
+        impactSentiment: row.impact_sentiment,
+        permanentUrl: `https://news.biaz.hurated.com/article/${row.id}`
       };
     }));
     
@@ -265,6 +357,7 @@ app.get('/v1/articles/:id', async (req, res) => {
       truthScore: article.truth_score ? parseFloat(article.truth_score) : null,
       impactSentiment: article.impact_sentiment,
       explanation: article.explanation,
+      permanentUrl: `https://news.biaz.hurated.com/article/${article.id}`,
       claims: claimsResult.rows.map((c: any) => ({
         id: c.id,
         text: c.text,

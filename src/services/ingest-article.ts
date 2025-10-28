@@ -350,7 +350,8 @@ export async function ingestArticle(url: string, manualSymbol?: string, rssItem?
         evidenceLinks: c.evidenceLinks
       })),
       explanation: generateExplanation(verifiedClaims, truthScore),
-      forecastId: null
+      forecastId: null,
+      permanentUrl: `https://news.biaz.hurated.com/article/${articleId}`
     };
   } catch (error) {
     throw error;

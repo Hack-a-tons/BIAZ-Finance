@@ -1,0 +1,58 @@
+{
+  "id": "art_1761615729035",
+  "title": "Apple Inc. Announces Record Quarterly Earnings",
+  "summary": "Apple Inc. announced record quarterly earnings today, with revenue reaching $95 billion. The company reported strong iPhone sales and growing services revenue.",
+  "forecastSummary": "Strong earnings likely to drive AAPL stock higher in near term, with positive sentiment across tech sector.",
+  "url": "https://demo.example.com/test-whatsapp-permanent-url",
+  "imageUrl": "https://images.pexels.com/photos/518543/pexels-photo-518543.jpeg?auto=compress&cs=tinysrgb&w=800&h=600",
+  "publishedAt": "2024-10-27T18:42:09.035Z",
+  "source": "demo",
+  "symbols": ["AAPL"],
+  "symbolsMentioned": [
+    {
+      "symbol": "AAPL",
+      "name": "Apple Inc.",
+      "price": 225.37,
+      "change": 0.89,
+      "link": "https://finance.yahoo.com/quote/AAPL"
+    }
+  ],
+  "symbolsAffected": [
+    {
+      "symbol": "AAPL",
+      "name": "Apple Inc.",
+      "price": 225.37,
+      "change": 0.89,
+      "link": "https://finance.yahoo.com/quote/AAPL"
+    }
+  ],
+  "truthScore": 0.92,
+  "impactSentiment": "positive",
+  "claims": [
+    {
+      "id": "clm_1761615729036",
+      "text": "Apple Inc. announced record quarterly earnings today",
+      "verified": true,
+      "confidence": 0.95,
+      "evidenceLinks": [
+        "https://investor.apple.com/news-and-events/",
+        "https://www.sec.gov/edgar/browse/?CIK=320193",
+        "https://finance.yahoo.com/quote/AAPL/"
+      ]
+    },
+    {
+      "id": "clm_1761615729037",
+      "text": "Revenue reaching $95 billion",
+      "verified": true,
+      "confidence": 0.88,
+      "evidenceLinks": [
+        "https://investor.apple.com/quarterly-results/",
+        "https://www.apple.com/newsroom/",
+        "https://finance.yahoo.com/quote/AAPL/financials/"
+      ]
+    }
+  ],
+  "explanation": "High confidence: 2 of 2 claims verified with strong evidence from official sources.",
+  "forecastId": null,
+  "permanentUrl": "https://news.biaz.hurated.com/article/art_1761615729035"
+}
