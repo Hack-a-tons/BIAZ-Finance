@@ -136,11 +136,19 @@ export async function ingestArticle(url: string, manualSymbol?: string, rssItem?
       throw new Error('No stock symbols found in article');
     }
     
-    // Reject advertisement articles
+    // Reject advertisement articles (more specific detection)
     const lowerTitle = fetched.title.toLowerCase();
     const lowerText = fetched.fullText.toLowerCase();
-    const adKeywords = ['subscribe to', 'sign up', 'get access', 'become a member', 'join now', 'premium content'];
-    const isAd = adKeywords.some(keyword => lowerTitle.includes(keyword) || lowerText.substring(0, 500).includes(keyword));
+    
+    // Only flag as ad if multiple ad indicators are present or title is clearly promotional
+    const strongAdKeywords = ['subscribe now', 'join today', 'limited time offer', 'exclusive access', 'premium membership'];
+    const titleAdKeywords = ['advertisement', 'sponsored', 'promoted content'];
+    
+    const hasStrongAdKeywords = strongAdKeywords.some(keyword => lowerTitle.includes(keyword) || lowerText.substring(0, 300).includes(keyword));
+    const hasTitleAdKeywords = titleAdKeywords.some(keyword => lowerTitle.includes(keyword));
+    const isVeryShort = fetched.fullText.length < 200; // Very short content is likely promotional
+    
+    const isAd = hasTitleAdKeywords || (hasStrongAdKeywords && isVeryShort);
     
     if (isAd) {
       console.warn(`[${new Date().toISOString()}] Skipping article (advertisement): ${url}`);
