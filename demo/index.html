@@ -175,7 +175,8 @@ Apple Inc. announced record quarterly earnings today, with revenue reaching $120
 
                         // Update loading message with progress
                         const loading = document.getElementById('loading');
-                        loading.innerHTML = `Analyzing article... ${task.progress}% complete<br><small>Status: ${task.status}</small>`;
+                        const message = task.message || 'Processing...';
+                        loading.innerHTML = `${message}<br><div style="background: #333; border-radius: 4px; height: 8px; margin: 10px 0;"><div style="background: #00ff88; height: 100%; border-radius: 4px; width: ${task.progress}%; transition: width 0.3s;"></div></div><small>${task.progress}% complete</small>`;
 
                         if (task.status === 'completed') {
                             resolve(task.result);

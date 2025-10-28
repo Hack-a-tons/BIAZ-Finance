@@ -433,6 +433,10 @@ app.get('/v1/tasks/:taskId', async (req, res) => {
       updatedAt: task.updatedAt
     };
 
+    if (task.status === 'processing' && task.errorMessage) {
+      response.message = task.errorMessage; // Status message during processing
+    }
+
     if (task.status === 'completed') {
       response.result = task.resultData;
       response.completedAt = task.completedAt;
