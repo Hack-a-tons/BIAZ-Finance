@@ -161,7 +161,7 @@ app.get('/article/:id', async (req, res) => {
       .replace(/{{truthScorePercent}}/g, Math.round(truthScore * 100).toString())
       .replace(/{{scoreColor}}/g, scoreColor)
       .replace(/{{imageUrl}}/g, article.image_url || '')
-      .replace(/{{permanentUrl}}/g, `https://news.biaz.hurated.com/article/${id}`)
+      .replace(/{{permanentUrl}}/g, `https://api.news.biaz.hurated.com/article/${id}`)
       .replace(/{{forecastSummary}}/g, article.forecast_summary || '')
       .replace(/{{#symbolsAffected.length}}[\s\S]*?{{\/symbolsAffected.length}}/g, 
         stockDetails.length > 0 ? `<div class="stocks"><h3>Affected Stocks:</h3>${stockDetails.map(s => 
@@ -253,7 +253,7 @@ app.get('/v1/articles', async (req, res) => {
         symbols: symbolsResult.rows.map((s: any) => s.symbol),
         truthScore: row.truth_score ? parseFloat(row.truth_score) : null,
         impactSentiment: row.impact_sentiment,
-        permanentUrl: `https://news.biaz.hurated.com/article/${row.id}`
+        permanentUrl: `https://api.news.biaz.hurated.com/article/${row.id}`
       };
     }));
     
@@ -357,7 +357,7 @@ app.get('/v1/articles/:id', async (req, res) => {
       truthScore: article.truth_score ? parseFloat(article.truth_score) : null,
       impactSentiment: article.impact_sentiment,
       explanation: article.explanation,
-      permanentUrl: `https://news.biaz.hurated.com/article/${article.id}`,
+      permanentUrl: `https://api.news.biaz.hurated.com/article/${article.id}`,
       claims: claimsResult.rows.map((c: any) => ({
         id: c.id,
         text: c.text,

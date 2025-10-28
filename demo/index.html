@@ -69,6 +69,14 @@ Apple Inc. announced record quarterly earnings today, with revenue reaching $120
         <div class="error" id="error" style="display: none;"></div>
 
         <div class="results" id="results">
+            <div class="section" id="permanentLinkSection" style="display: none;">
+                <h2>🔗 Permanent Link</h2>
+                <p style="color: #ccc; margin-bottom: 10px;">Share this analysis:</p>
+                <div style="background: #2a2a2a; padding: 10px; border-radius: 6px; font-family: monospace; word-break: break-all;">
+                    <a id="permanentUrl" href="#" target="_blank" style="color: #00aaff; text-decoration: none;"></a>
+                </div>
+            </div>
+
             <div class="section">
                 <h2>📊 Truth Score</h2>
                 <div class="score" id="truthScore">-</div>
@@ -156,6 +164,15 @@ Apple Inc. announced record quarterly earnings today, with revenue reaching $120
         }
 
         function displayResults(data) {
+            // Permanent Link
+            if (data.permanentUrl) {
+                const linkSection = document.getElementById('permanentLinkSection');
+                const linkEl = document.getElementById('permanentUrl');
+                linkEl.href = data.permanentUrl;
+                linkEl.textContent = data.permanentUrl;
+                linkSection.style.display = 'block';
+            }
+
             // Truth Score
             const score = data.truthScore ?? data.truth_score ?? 0;
             const scoreEl = document.getElementById('truthScore');

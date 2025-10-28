@@ -351,7 +351,7 @@ export async function ingestArticle(url: string, manualSymbol?: string, rssItem?
       })),
       explanation: generateExplanation(verifiedClaims, truthScore),
       forecastId: null,
-      permanentUrl: `https://news.biaz.hurated.com/article/${articleId}`
+      permanentUrl: `https://api.news.biaz.hurated.com/article/${articleId}`
     };
   } catch (error) {
     throw error;
