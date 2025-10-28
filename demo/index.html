@@ -126,28 +126,69 @@ Apple Inc. announced record quarterly earnings today, with revenue reaching $120
             error.style.display = 'none';
 
             try {
-                // Ingest article with 60s timeout
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 60000);
-                
-                const response = await fetch(`${API_URL}/articles/ingest`, {
+                // Start async analysis
+                const response = await fetch(`${API_URL}/articles/ingest-async`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         url: 'https://demo.example.com/article',
                         content: text
-                    }),
-                    signal: controller.signal
+                    })
                 });
-                
-                clearTimeout(timeoutId);
 
                 if (!response.ok) {
                     const errorText = await response.text().catch(() => response.statusText);
                     throw new Error(`API error: ${response.status} - ${errorText}`);
                 }
 
-                const data = await response.json();
+                const { taskId } = await response.json();
+                
+                // Poll for results
+                await pollTaskStatus(taskId);
+                
+            } catch (err) {
+                console.error('Analysis failed:', err);
+                error.textContent = `Error: ${err.message}`;
+                error.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                loading.classList.remove('active');
+            }
+        }
+
+        async function pollTaskStatus(taskId) {
+            const maxAttempts = 60; // 2 minutes max
+            let attempts = 0;
+
+            const checkStatus = async () => {
+                attempts++;
+                
+                try {
+                    const response = await fetch(`${API_URL}/tasks/${taskId}`);
+                    const task = await response.json();
+
+                    // Update loading message with progress
+                    const loading = document.getElementById('loading');
+                    loading.innerHTML = `Analyzing article... ${task.progress}% complete<br><small>Status: ${task.status}</small>`;
+
+                    if (task.status === 'completed') {
+                        displayResults(task.result);
+                        return;
+                    } else if (task.status === 'failed') {
+                        throw new Error(task.error || 'Analysis failed');
+                    } else if (attempts >= maxAttempts) {
+                        throw new Error('Analysis timeout - please try again');
+                    } else {
+                        // Continue polling
+                        setTimeout(checkStatus, 2000);
+                    }
+                } catch (err) {
+                    throw err;
+                }
+            };
+
+            await checkStatus();
+        }
                 displayResults(data);
                 
             } catch (err) {
