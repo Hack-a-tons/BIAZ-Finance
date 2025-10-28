@@ -83,18 +83,37 @@ async function processTaskAsync(taskId: string) {
     if (!task) return;
     
     if (task.type === 'ingest-article') {
-      await updateTaskProgress(taskId, 10, 'processing', 'Extracting article content...');
+      await updateTaskProgress(taskId, 0, 'processing', 'Looking for claims in article...');
       
-      // We'll need to modify ingestArticle to accept progress callback
-      const result = await ingestArticleWithProgress(
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Small delay to show step
+      
+      await updateTaskProgress(taskId, 0, 'processing', 'Extracting article content...');
+      
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      await updateTaskProgress(taskId, 0, 'processing', 'Identifying stock symbols...');
+      
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Call the actual ingest function
+      const { ingestArticle } = await import('./ingest-article');
+      
+      await updateTaskProgress(taskId, 0, 'processing', 'Verifying claims with evidence...');
+      
+      const result = await ingestArticle(
         task.inputData.url,
         task.inputData.symbol,
         undefined, // rssItem
         'apify', // method
         task.inputData.content,
-        task.inputData.title,
-        (progress, message) => updateTaskProgress(taskId, progress, 'processing', message)
+        task.inputData.title
       );
+      
+      await updateTaskProgress(taskId, 80, 'processing', 'Generating truth score...');
+      
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      await updateTaskProgress(taskId, 90, 'processing', 'Finalizing analysis...');
       
       await updateTaskProgress(taskId, 100, 'completed', 'Analysis complete');
       
@@ -111,26 +130,5 @@ async function processTaskAsync(taskId: string) {
   }
 }
 
-// Wrapper function that provides progress updates
-async function ingestArticleWithProgress(url: string, manualSymbol?: string, rssItem?: any, method: 'apify' | 'rss' | 'http' = 'apify', directContent?: string, directTitle?: string, progressCallback?: (progress: number, message: string) => Promise<void>): Promise<any> {
-  const progress = progressCallback || (() => Promise.resolve());
-  
-  await progress(15, 'Analyzing article content...');
-  
-  await progress(25, 'Extracting claims from article...');
-  
-  await progress(35, 'Identifying stock symbols...');
-  
-  // Call the actual ingest function
-  const { ingestArticle } = await import('./ingest-article');
-  
-  await progress(50, 'Verifying claims with evidence...');
-  
-  const result = await ingestArticle(url, manualSymbol, rssItem, method, directContent, directTitle);
-  
-  await progress(80, 'Generating truth score...');
-  
-  await progress(90, 'Fetching stock prices...');
-  
-  return result;
-}
+// Remove the wrapper function since we're not using it
+// async function ingestArticleWithProgress...
