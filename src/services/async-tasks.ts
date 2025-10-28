@@ -78,14 +78,18 @@ async function processTaskAsync(taskId: string) {
     if (!task) return;
     
     if (task.type === 'ingest-article') {
-      await updateTaskProgress(taskId, 25);
+      await updateTaskProgress(taskId, 10);
       
       const result = await ingestArticle(
         task.inputData.url,
         task.inputData.symbol,
+        undefined, // rssItem
+        'apify', // method
         task.inputData.content,
         task.inputData.title
       );
+      
+      await updateTaskProgress(taskId, 90);
       
       await pool.query(
         'UPDATE tasks SET status = $1, result_data = $2, progress = $3, completed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $4',
