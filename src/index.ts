@@ -10,6 +10,8 @@ import { join } from 'path';
 
 dotenv.config();
 
+import { createTask, getTask } from './services/async-tasks';
+
 const app = express();
 const PORT = process.env.API_PORT || 23000;
 const startTime = Date.now();
@@ -394,6 +396,54 @@ app.post('/v1/articles/ingest', expensiveLimiter, async (req, res) => {
   } catch (error: any) {
     console.warn(`[${new Date().toISOString()}] Ingest failed: ${error.message}`);
     res.status(500).json({ error: error.message || 'Failed to ingest article' });
+  }
+});
+
+// Async version - returns immediately with task ID
+app.post('/v1/articles/ingest-async', expensiveLimiter, async (req, res) => {
+  const { url, symbol, content, title } = req.body;
+  if (!url) return res.status(400).json({ error: 'URL required' });
+
+  try {
+    const taskId = await createTask('ingest-article', { url, symbol, content, title });
+    res.json({ 
+      taskId,
+      status: 'pending',
+      message: 'Article analysis started. Use /v1/tasks/{taskId} to check progress.'
+    });
+  } catch (error: any) {
+    console.warn(`[${new Date().toISOString()}] POST /articles/ingest-async failed: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Task status endpoint
+app.get('/v1/tasks/:taskId', async (req, res) => {
+  try {
+    const task = await getTask(req.params.taskId);
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+
+    const response: any = {
+      taskId: task.id,
+      status: task.status,
+      progress: task.progress,
+      createdAt: task.createdAt,
+      updatedAt: task.updatedAt
+    };
+
+    if (task.status === 'completed') {
+      response.result = task.resultData;
+      response.completedAt = task.completedAt;
+    } else if (task.status === 'failed') {
+      response.error = task.errorMessage;
+    }
+
+    res.json(response);
+  } catch (error: any) {
+    console.warn(`[${new Date().toISOString()}] GET /tasks/:taskId failed: ${error.message}`);
+    res.status(500).json({ error: error.message });
   }
 });
 
