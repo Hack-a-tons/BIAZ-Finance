@@ -95,10 +95,8 @@ async function processTaskAsync(taskId: string) {
       
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Call the actual ingest function
+      // Call the actual ingest function with progress callback
       const { ingestArticle } = await import('./ingest-article');
-      
-      await updateTaskProgress(taskId, 0, 'processing', 'Verifying claims with evidence...');
       
       const result = await ingestArticle(
         task.inputData.url,
@@ -106,7 +104,8 @@ async function processTaskAsync(taskId: string) {
         undefined, // rssItem
         'apify', // method
         task.inputData.content,
-        task.inputData.title
+        task.inputData.title,
+        (progress, message) => updateTaskProgress(taskId, progress, 'processing', message)
       );
       
       await updateTaskProgress(taskId, 80, 'processing', 'Generating truth score...');

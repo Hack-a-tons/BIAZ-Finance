@@ -9,8 +9,12 @@ export interface VerifiedClaim {
   evidenceLinks: string[];
 }
 
-export async function verifyClaims(claims: Array<{ text: string; confidence: number }>, context: string, sourceDomain?: string): Promise<VerifiedClaim[]> {
+export async function verifyClaims(claims: Array<{ text: string; confidence: number }>, context: string, sourceDomain?: string, progressCallback?: (progress: number, message: string) => Promise<void>): Promise<VerifiedClaim[]> {
   const claimsList = claims.map((c, i) => `${i + 1}. ${c.text}`).join('\n');
+  
+  if (progressCallback) {
+    await progressCallback(0, `Verifying ${claims.length} claims with evidence...`);
+  }
   
   // Check cache
   const cacheKey = aiCacheKey('verify-claims', claimsList + context + (sourceDomain || ''));
@@ -18,9 +22,13 @@ export async function verifyClaims(claims: Array<{ text: string; confidence: num
   if (cached) {
     return JSON.parse(cached);
   }
-  
+
   const systemPrompt = getPrompt('verify-claims-system');
   const userPrompt = getPrompt('verify-claims-user', { context, claimsList });
+
+  if (progressCallback) {
+    await progressCallback(0, `Processing claims verification...`);
+  }
 
   const response = await chat([
     { role: 'system', content: systemPrompt },

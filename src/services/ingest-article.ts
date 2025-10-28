@@ -7,7 +7,7 @@ import { extractClaims } from '../ai/extract-claims';
 import { verifyClaims, calculateTruthScore } from '../ai/verify-claims';
 import type { Article } from '../models';
 
-export async function ingestArticle(url: string, manualSymbol?: string, rssItem?: any, method: 'apify' | 'rss' | 'http' = 'apify', directContent?: string, directTitle?: string): Promise<Article> {
+export async function ingestArticle(url: string, manualSymbol?: string, rssItem?: any, method: 'apify' | 'rss' | 'http' = 'apify', directContent?: string, directTitle?: string, progressCallback?: (progress: number, message: string) => Promise<void>): Promise<Article> {
   try {
     const logUrl = directContent ? 'Pasted article' : url;
     console.log(`[${new Date().toISOString()}] Ingesting article: ${logUrl}`);
@@ -148,11 +148,14 @@ export async function ingestArticle(url: string, manualSymbol?: string, rssItem?
     }
 
     // 4. Extract claims
+    if (progressCallback) await progressCallback(0, 'Looking for claims in article...');
     const extractedClaims = await extractClaims(fetched.fullText, fetched.title);
     console.log(`[${new Date().toISOString()}] Extracted ${extractedClaims.length} claims`);
+    if (progressCallback) await progressCallback(0, `Found ${extractedClaims.length} claims to verify`);
 
     // 5. Verify claims
-    const verifiedClaims = await verifyClaims(extractedClaims, fetched.fullText, fetched.sourceDomain);
+    if (progressCallback) await progressCallback(0, 'Verifying claims with evidence...');
+    const verifiedClaims = await verifyClaims(extractedClaims, fetched.fullText, fetched.sourceDomain, progressCallback);
     console.log(`[${new Date().toISOString()}] Verified ${verifiedClaims.filter(c => c.verified).length} claims`);
 
     // 6. Calculate truth score
