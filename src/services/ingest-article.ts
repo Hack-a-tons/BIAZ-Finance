@@ -7,6 +7,33 @@ import { extractClaims } from '../ai/extract-claims';
 import { verifyClaims, calculateTruthScore } from '../ai/verify-claims';
 import type { Article } from '../models';
 
+function removeAdvertisements(text: string): string {
+  // Remove common advertisement patterns
+  const adPatterns = [
+    /subscribe to.*?newsletter/gi,
+    /sign up for.*?updates/gi,
+    /get access to.*?premium/gi,
+    /become a member.*?today/gi,
+    /join now.*?free/gi,
+    /limited time offer.*?\./gi,
+    /click here to.*?subscribe/gi,
+    /advertisement\s*$/gmi,
+    /sponsored content\s*$/gmi,
+    /\[ad\].*?\[\/ad\]/gi,
+    /\*\*advertisement\*\*/gi
+  ];
+  
+  let cleanedText = text;
+  adPatterns.forEach(pattern => {
+    cleanedText = cleanedText.replace(pattern, '');
+  });
+  
+  // Remove excessive whitespace
+  cleanedText = cleanedText.replace(/\n\s*\n\s*\n/g, '\n\n').trim();
+  
+  return cleanedText;
+}
+
 export async function ingestArticle(url: string, manualSymbol?: string, rssItem?: any, method: 'apify' | 'rss' | 'http' = 'apify', directContent?: string, directTitle?: string, progressCallback?: (progress: number, message: string) => Promise<void>): Promise<Article> {
   try {
     const logUrl = directContent ? 'Pasted article' : url;
@@ -136,24 +163,12 @@ export async function ingestArticle(url: string, manualSymbol?: string, rssItem?
       throw new Error('No stock symbols found in article');
     }
     
-    // Reject advertisement articles (more specific detection)
-    const lowerTitle = fetched.title.toLowerCase();
-    const lowerText = fetched.fullText.toLowerCase();
+    // Remove advertisement content before analysis
+    const cleanedText = removeAdvertisements(fetched.fullText);
+    const cleanedTitle = fetched.title;
     
-    // Only flag as ad if multiple ad indicators are present or title is clearly promotional
-    const strongAdKeywords = ['subscribe now', 'join today', 'limited time offer', 'exclusive access', 'premium membership'];
-    const titleAdKeywords = ['advertisement', 'sponsored', 'promoted content'];
-    
-    const hasStrongAdKeywords = strongAdKeywords.some(keyword => lowerTitle.includes(keyword) || lowerText.substring(0, 300).includes(keyword));
-    const hasTitleAdKeywords = titleAdKeywords.some(keyword => lowerTitle.includes(keyword));
-    const isVeryShort = fetched.fullText.length < 200; // Very short content is likely promotional
-    
-    const isAd = hasTitleAdKeywords || (hasStrongAdKeywords && isVeryShort);
-    
-    if (isAd) {
-      console.warn(`[${new Date().toISOString()}] Skipping article (advertisement): ${url}`);
-      throw new Error('Article appears to be an advertisement');
-    }
+    // Update fetched content with cleaned version
+    fetched.fullText = cleanedText;
 
     // 4. Extract claims
     if (progressCallback) await progressCallback(0, 'Looking for claims in article...');
