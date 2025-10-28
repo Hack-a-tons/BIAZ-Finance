@@ -9,17 +9,20 @@ export interface VerifiedClaim {
   evidenceLinks: string[];
 }
 
-export async function verifyClaims(claims: Array<{ text: string; confidence: number }>, context: string, sourceDomain?: string, progressCallback?: (progress: number, message: string) => Promise<void>): Promise<VerifiedClaim[]> {
+export async function verifyClaims(claims: Array<{ text: string; confidence: number }>, context: string, sourceDomain?: string, progressCallback?: (claimIndex: number, total: number) => Promise<void>): Promise<VerifiedClaim[]> {
   const claimsList = claims.map((c, i) => `${i + 1}. ${c.text}`).join('\n');
   
   if (progressCallback) {
-    await progressCallback(0, `Verifying ${claims.length} claims with evidence...`);
+    await progressCallback(0, claims.length);
   }
   
   // Check cache
   const cacheKey = aiCacheKey('verify-claims', claimsList + context + (sourceDomain || ''));
   const cached = await cacheGet(cacheKey);
   if (cached) {
+    if (progressCallback) {
+      await progressCallback(claims.length, claims.length);
+    }
     return JSON.parse(cached);
   }
 
@@ -27,7 +30,7 @@ export async function verifyClaims(claims: Array<{ text: string; confidence: num
   const userPrompt = getPrompt('verify-claims-user', { context, claimsList });
 
   if (progressCallback) {
-    await progressCallback(0, `Processing claims verification...`);
+    await progressCallback(Math.floor(claims.length / 2), claims.length);
   }
 
   const response = await chat([

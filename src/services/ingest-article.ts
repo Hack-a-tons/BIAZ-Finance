@@ -150,12 +150,14 @@ export async function ingestArticle(url: string, manualSymbol?: string, rssItem?
     console.log(`[${new Date().toISOString()}] Source: ${sourceId} - "${fetched.title.substring(0, 60)}${fetched.title.length > 60 ? '...' : ''}"`);
 
     // 3. Extract symbols (mentioned and affected)
+    if (progressCallback) await progressCallback(0, 'Identifying stock symbols...');
     const mentionedSymbols = await extractSymbols(fetched.title, fetched.fullText, manualSymbol);
     const affectedSymbols = mentionedSymbols.length === 0 ? await extractAffectedSymbols(fetched.title, fetched.fullText) : [];
     const symbols = [...new Set([...mentionedSymbols, ...affectedSymbols])]; // Combine and dedupe
     
     console.log(`[${new Date().toISOString()}] Symbols mentioned: ${mentionedSymbols.join(', ') || 'none'}`);
     console.log(`[${new Date().toISOString()}] Symbols affected: ${affectedSymbols.join(', ') || 'none'}`);
+    if (progressCallback) await progressCallback(0, `Found symbols: ${symbols.join(', ') || 'none'}`);
     
     // Allow articles without stocks for demo/analysis purposes
     if (symbols.length === 0 && !directContent) {
@@ -177,9 +179,16 @@ export async function ingestArticle(url: string, manualSymbol?: string, rssItem?
     if (progressCallback) await progressCallback(0, `Found ${extractedClaims.length} claims to verify`);
 
     // 5. Verify claims
-    if (progressCallback) await progressCallback(0, 'Verifying claims with evidence...');
-    const verifiedClaims = await verifyClaims(extractedClaims, fetched.fullText, fetched.sourceDomain, progressCallback);
-    console.log(`[${new Date().toISOString()}] Verified ${verifiedClaims.filter(c => c.verified).length} claims`);
+    if (progressCallback) await progressCallback(0, `Verifying ${extractedClaims.length} claims with evidence...`);
+    
+    const verifiedClaims = await verifyClaims(extractedClaims, fetched.fullText, fetched.sourceDomain, async (claimIndex, total) => {
+      const percentage = Math.round((claimIndex / total) * 100);
+      if (progressCallback) await progressCallback(0, `Processed claims: ${claimIndex} of ${total} (${percentage}%)`);
+    });
+    
+    const verifiedCount = verifiedClaims.filter(c => c.verified).length;
+    console.log(`[${new Date().toISOString()}] Verified ${verifiedCount} of ${verifiedClaims.length} claims`);
+    if (progressCallback) await progressCallback(0, `Verified ${verifiedCount} of ${verifiedClaims.length} claims`);
 
     // 6. Calculate truth score
     const truthScore = calculateTruthScore(verifiedClaims);
