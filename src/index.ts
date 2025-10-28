@@ -825,6 +825,21 @@ app.post('/v1/admin/update-prices', async (req, res) => {
   }
 });
 
+// Admin endpoint to clear old articles
+app.post('/admin/clear-articles', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM article_symbols');
+    await pool.query('DELETE FROM claims');
+    await pool.query('DELETE FROM articles');
+    await pool.query('DELETE FROM tasks');
+    
+    res.json({ message: 'All articles and tasks cleared successfully' });
+  } catch (error: any) {
+    console.error('Clear articles failed:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`BIAZ Finance API running on port ${PORT}`);
 });
